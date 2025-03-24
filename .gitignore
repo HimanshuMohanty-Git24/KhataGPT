@@ -92,3 +92,4 @@ wheels/
 .env
 *docx
 extarct.py
+*sh

@@ -1,36 +1,67 @@
 import axios from 'axios';
 
-// Create axios instance with base URL from environment variables
+const API_BASE_URL = 'http://localhost:8000';
+
+// Create axios instance with common config
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor for handling auth tokens if needed
+// Request interceptor for API calls
 api.interceptors.request.use(
   (config) => {
-    // Add any auth tokens or other headers here
+    // You can add auth token here if needed
+    // const token = localStorage.getItem('authToken');
+    // if (token) {
+    //   config.headers.Authorization = `Bearer ${token}`;
+    // }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// Response interceptor for error handling
+// Response interceptor for API calls
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Log errors and handle specific status codes
-    console.error('API Error:', error);
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
     
-    // Handle unauthorized errors
-    if (error.response && error.response.status === 401) {
-      // Handle unauthorized
+    // Handle 401 responses (Unauthorized) - useful for token refresh
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      // Handle token refresh logic here if needed
     }
     
     return Promise.reject(error);
   }
 );
 
+// API endpoints
+const documentService = {
+  getAllDocuments: () => api.get('/documents/'),
+  getDocument: (id) => api.get(`/documents/${id}/`),
+  uploadDocuments: (formData, onUploadProgress) => 
+    api.post('/upload-documents/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress,
+    }),
+  deleteDocument: (id) => api.delete(`/documents/${id}/`),
+};
+
+const chatService = {
+  sendMessage: (documentId, query) => api.post(`/chat/${documentId}/`, { query }),
+};
+
+// Export services
+export { api, documentService, chatService };
+
+// Export the default api instance
 export default api;

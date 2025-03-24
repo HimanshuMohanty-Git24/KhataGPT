@@ -1,168 +1,254 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useCallback, useRef } from 'react';
 import { 
   Box, 
-  Typography, 
   Button, 
+  Typography, 
   Paper, 
-  LinearProgress, 
+  CircularProgress, 
+  LinearProgress,
   Alert,
-  IconButton
+  useTheme,
+  alpha
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import CancelIcon from '@mui/icons-material/Cancel';
-import documentService from '../../services/documentService';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import { motion } from 'framer-motion';
+import { useDropzone } from 'react-dropzone';
+import axios from 'axios';
 
-const DocumentUploader = () => {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
+  const theme = useTheme();
+  const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [success, setSuccess] = useState(false);
+  const cancelTokenRef = useRef();
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // Check file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      setError('Please select a valid image file (JPG, PNG, or WEBP)');
-      return;
-    }
-
-    // Check file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size exceeds 10MB limit');
-      return;
-    }
-
+  const onDrop = useCallback((acceptedFiles) => {
     setError(null);
-    setSelectedFile(file);
+    setSuccess(false);
+    setFiles(
+      acceptedFiles.map(file => Object.assign(file, {
+        preview: URL.createObjectURL(file),
+        progress: 0,
+        error: null,
+        uploaded: false
+      }))
+    );
+  }, []);
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
+  const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({
+    onDrop,
+    accept: {
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/gif': ['.gif'],
+      'image/webp': ['.webp'],
+      'image/heic': ['.heic'],
+      'image/tiff': ['.tiff', '.tif'],
+    },
+    maxSize: 15728640, // 15MB
+    maxFiles: 5,
+  });
 
-  const handleUpload = async () => {
-    if (!selectedFile) return;
+  const uploadFiles = async () => {
+    if (files.length === 0) return;
+    
+    setUploading(true);
+    setUploadProgress(0);
+    setError(null);
+    setSuccess(false);
 
+    // Using axios for upload with progress tracking
+    cancelTokenRef.current = axios.CancelToken.source();
+    
     try {
-      setUploading(true);
-      setError(null);
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('file', file); // Changed from 'files' to 'file' to match backend
+      });
 
-      const uploadedDocument = await documentService.uploadDocument(selectedFile);
+      await axios.post('/api/documents/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        cancelToken: cancelTokenRef.current.token,
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        },
+      });
+
+      setSuccess(true);
+      if (refreshDocuments) refreshDocuments();
+      if (onUploadSuccess) onUploadSuccess();
       
-      // Navigate to document view page
-      navigate(`/documents/${uploadedDocument._id}`);
+      // Clear files after successful upload with slight delay to show completion
+      setTimeout(() => {
+        setFiles([]);
+      }, 2000);
     } catch (err) {
       console.error('Upload error:', err);
-      setError(err.response?.data?.detail || 'Error uploading document. Please try again.');
+      if (axios.isCancel(err)) {
+        setError('Upload was cancelled');
+      } else if (err.response) {
+        setError(`Upload failed: ${err.response.data.detail || 'Server error'}`);
+      } else {
+        setError('Upload failed: Network error or server is unreachable');
+      }
     } finally {
       setUploading(false);
     }
   };
 
-  const handleClearSelection = () => {
-    setSelectedFile(null);
-    setPreview(null);
+  const cancelUpload = () => {
+    if (cancelTokenRef.current) {
+      cancelTokenRef.current.cancel('Upload cancelled by user');
+    }
+    setUploading(false);
+  };
+
+  const clearFiles = () => {
+    setFiles([]);
     setError(null);
+    setSuccess(false);
+  };
+
+  const dropzoneStyle = {
+    border: '2px dashed',
+    borderColor: isDragAccept 
+      ? theme.palette.success.main 
+      : isDragReject 
+        ? theme.palette.error.main 
+        : theme.palette.divider,
+    borderRadius: theme.shape.borderRadius,
+    backgroundColor: alpha(theme.palette.background.paper, 0.8),
+    padding: 3,
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      borderColor: theme.palette.primary.main,
+      backgroundColor: alpha(theme.palette.background.paper, 0.95),
+    }
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
-      <Typography variant="h5" gutterBottom>
-        Upload Document
+    <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+      <Typography variant="h6" component="h2" gutterBottom>
+        Upload Images
+      </Typography>
+      <Typography variant="body2" color="textSecondary" paragraph>
+        Upload receipt, bill, menu, or other document images to analyze and chat with.
       </Typography>
       
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+      )}
+      
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          Images uploaded successfully!
         </Alert>
       )}
       
-      <Box sx={{ mb: 3 }}>
-        <input
-          accept="image/*"
-          style={{ display: 'none' }}
-          id="document-upload"
-          type="file"
-          onChange={handleFileChange}
-          disabled={uploading}
-        />
-        <label htmlFor="document-upload">
-          <Button
-            variant="outlined"
-            component="span"
-            startIcon={<CloudUploadIcon />}
-            disabled={uploading}
-            fullWidth
-            sx={{ p: 2, border: '2px dashed #ccc' }}
+      <Box {...getRootProps({ sx: dropzoneStyle })}>
+        <input {...getInputProps()} />
+        <Box sx={{ p: 3, textAlign: 'center' }}>
+          <motion.div
+            animate={{ y: isDragActive ? -10 : 0 }}
+            transition={{ type: 'spring', stiffness: 300 }}
           >
-            Select Document Image
-          </Button>
-        </label>
+            <CloudUploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+          </motion.div>
+          
+          <Typography variant="body1" gutterBottom>
+            {isDragActive
+              ? 'Drop the files here...'
+              : 'Drag & drop image files here, or click to select files'}
+          </Typography>
+          <Typography variant="caption" display="block" color="textSecondary">
+            Supports JPG, PNG, GIF, WEBP, HEIC, TIFF (Max: 15MB)
+          </Typography>
+        </Box>
       </Box>
       
-      {selectedFile && (
-        <Box sx={{ mt: 2, position: 'relative' }}>
+      {files.length > 0 && (
+        <Box sx={{ mt: 3 }}>
           <Typography variant="subtitle2" gutterBottom>
-            Selected: {selectedFile.name}
+            Selected Files ({files.length})
           </Typography>
           
-          {preview && (
-            <Box sx={{ position: 'relative', mb: 2 }}>
-              <img
-                src={preview}
-                alt="Document preview"
-                style={{
-                  width: '100%',
-                  maxHeight: '300px',
-                  objectFit: 'contain',
-                  border: '1px solid #eee',
-                  borderRadius: '4px',
-                }}
-              />
-              
-              <IconButton
-                size="small"
-                sx={{
-                  position: 'absolute',
-                  top: 5,
-                  right: 5,
-                  bgcolor: 'rgba(255,255,255,0.7)',
-                }}
-                onClick={handleClearSelection}
-                disabled={uploading}
-              >
-                <CancelIcon />
-              </IconButton>
-            </Box>
-          )}
-          
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleUpload}
-            disabled={uploading}
-            fullWidth
-            sx={{ mt: 1 }}
-          >
-            {uploading ? 'Processing...' : 'Upload & Process Document'}
-          </Button>
-          
-          {uploading && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Extracting text and analyzing document...
+          {files.map((file) => (
+            <Box
+              key={file.name}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                p: 1,
+                mb: 1,
+                borderRadius: 1,
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <InsertDriveFileIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <Typography variant="body2" noWrap sx={{ flexGrow: 1 }}>
+                {file.name} ({(file.size / 1024).toFixed(1)} KB)
               </Typography>
-              <LinearProgress />
+              {file.uploaded ? (
+                <CheckCircleIcon color="success" sx={{ ml: 1 }} />
+              ) : file.error ? (
+                <ErrorIcon color="error" sx={{ ml: 1 }} />
+              ) : null}
+            </Box>
+          ))}
+
+          {uploading && (
+            <Box sx={{ width: '100%', mt: 2 }}>
+              <LinearProgress 
+                variant="determinate" 
+                value={uploadProgress} 
+                sx={{ height: 10, borderRadius: 5 }}
+              />
+              <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                Uploading... {uploadProgress}%
+              </Typography>
             </Box>
           )}
+
+          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : <CloudUploadIcon />}
+              onClick={uploadFiles}
+              disabled={uploading}
+              fullWidth
+            >
+              {uploading ? 'Uploading...' : 'Upload Images'}
+            </Button>
+
+            {uploading ? (
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={cancelUpload}
+              >
+                Cancel
+              </Button>
+            ) : (
+              <Button
+                variant="outlined"
+                onClick={clearFiles}
+              >
+                Clear
+              </Button>
+            )}
+          </Box>
         </Box>
       )}
     </Paper>

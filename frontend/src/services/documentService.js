@@ -1,81 +1,141 @@
 import api from './api';
 
-const DOCUMENT_ENDPOINT = '/api/v1/documents';
-
+/**
+ * Service for document-related API operations
+ */
 const documentService = {
   /**
-   * Get all documents or search by term
-   * @param {string} searchTerm - Optional search term
-   * @returns {Promise<Array>} List of documents
+   * Get all documents
+   * @returns {Promise} - Promise resolving to array of documents
    */
-  getAllDocuments: async (searchTerm) => {
-    const params = searchTerm ? { search: searchTerm } : {};
-    const response = await api.get(DOCUMENT_ENDPOINT, { params });
-    return response.data;
+  getAllDocuments: async () => {
+    try {
+      const response = await api.get('/documents/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      throw error;
+    }
   },
-
+  
   /**
    * Get a document by ID
    * @param {string} id - Document ID
-   * @returns {Promise<Object>} Document data
+   * @returns {Promise} - Promise resolving to document data
    */
   getDocumentById: async (id) => {
-    const response = await api.get(`${DOCUMENT_ENDPOINT}/${id}`);
-    return response.data;
+    try {
+      const response = await api.get(`/documents/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching document ${id}:`, error);
+      throw error;
+    }
   },
-
+  
   /**
-   * Upload a document image
-   * @param {File} file - Document image file
-   * @returns {Promise<Object>} Processed document data
+   * Upload documents
+   * @param {FormData} formData - Form data containing files and metadata
+   * @param {Function} onUploadProgress - Progress callback
+   * @returns {Promise} - Promise resolving to upload result
    */
-  uploadDocument: async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await api.post(DOCUMENT_ENDPOINT, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+  uploadDocuments: async (formData, onUploadProgress) => {
+    try {
+      const response = await api.post('/documents/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          if (onUploadProgress) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            onUploadProgress(percentCompleted);
+          }
+        },
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error uploading documents:', error);
+      throw error;
+    }
   },
-
+  
   /**
    * Delete a document
    * @param {string} id - Document ID
-   * @returns {Promise<Object>} Success message
+   * @returns {Promise} - Promise resolving when document is deleted
    */
   deleteDocument: async (id) => {
-    const response = await api.delete(`${DOCUMENT_ENDPOINT}/${id}`);
-    return response.data;
+    try {
+      await api.delete(`/documents/${id}/`);
+      return { success: true };
+    } catch (error) {
+      console.error(`Error deleting document ${id}:`, error);
+      throw error;
+    }
   },
-
+  
   /**
-   * Format a date string
-   * @param {string} dateString - ISO date string
-   * @returns {string} Formatted date
+   * Get document analysis
+   * @param {string} id - Document ID
+   * @returns {Promise} - Promise resolving to document analysis data
    */
-  formatDate: (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  getDocumentAnalysis: async (id) => {
+    try {
+      const response = await api.get(`/documents/${id}/analysis/`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching document analysis for ${id}:`, error);
+      throw error;
+    }
   },
-
+  
   /**
-   * Get document type label with proper capitalization
-   * @param {string} docType - Document type
-   * @returns {string} Formatted document type
+   * Update document metadata
+   * @param {string} id - Document ID
+   * @param {Object} metadata - Updated metadata
+   * @returns {Promise} - Promise resolving to updated document
    */
-  getDocTypeLabel: (docType) => {
-    if (!docType) return 'Unknown';
-    return docType.charAt(0).toUpperCase() + docType.slice(1);
+  updateDocumentMetadata: async (id, metadata) => {
+    try {
+      const response = await api.patch(`/documents/${id}/`, metadata);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating document ${id}:`, error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Check document processing status
+   * @param {string} id - Document ID
+   * @returns {Promise} - Promise resolving to document status
+   */
+  checkDocumentStatus: async (id) => {
+    try {
+      const response = await api.get(`/documents/${id}/status/`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error checking status for document ${id}:`, error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Get document categories
+   * @returns {Promise} - Promise resolving to array of document categories
+   */
+  getDocumentCategories: async () => {
+    try {
+      const response = await api.get('/documents/categories/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching document categories:', error);
+      // Return empty array instead of throwing
+      return [];
+    }
   }
 };
 

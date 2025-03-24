@@ -1,416 +1,388 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  IconButton,
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Box, 
+  Paper, 
+  Typography, 
+  TextField, 
+  IconButton, 
+  Tooltip, 
+  // eslint-disable-next-line
+  Divider, 
+  useTheme, 
+  alpha,
   CircularProgress,
-  Tooltip,
-  Alert,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-} from "@mui/material";
-import SendIcon from "@mui/icons-material/Send";
-import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
-import SearchIcon from "@mui/icons-material/Search";
-import ReactMarkdown from "react-markdown";
-import chatService from "../../services/chatService";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
-import rehypeSanitize from "rehype-sanitize";
+  // eslint-disable-next-line
+  Button
+} from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
+import MicIcon from '@mui/icons-material/Mic';
+import StopIcon from '@mui/icons-material/Stop';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { motion, AnimatePresence } from 'framer-motion';
+// eslint-disable-next-line
+import ReactMarkdown from 'react-markdown';
+// eslint-disable-next-line
+import remarkGfm from 'remark-gfm';
+// eslint-disable-next-line
+import rehypeRaw from 'rehype-raw';
+// eslint-disable-next-line
+import rehypeSanitize from 'rehype-sanitize';
+import ChatBubble from './ChatBubble';
+import axios from 'axios';
 
-// Rest of the file remains the same
-
-const ChatInterface = ({ documentId, documentTitle }) => {
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [error, setError] = useState(null);
-  const [clearDialogOpen, setClearDialogOpen] = useState(false);
+const ChatInterface = ({ documentId, documentName = 'Document' }) => {
+  const theme = useTheme();
   const messagesEndRef = useRef(null);
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      content: `Hello! I'm your document assistant. Ask me anything about "${documentName}".`,
+      timestamp: new Date().toISOString(),
+    }
+  ]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState(null);
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState(null);
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
+  const chatContainerRef = useRef(null);
+  const cancelTokenRef = useRef(null);
 
-  // Load chat history
+  // Initialize speech recognition if supported
   useEffect(() => {
-    const fetchChatHistory = async () => {
-      try {
-        setLoadingHistory(true);
-        setError(null);
-        const history = await chatService.getChatHistory(documentId);
-        setMessages(history);
-      } catch (err) {
-        console.error("Error fetching chat history:", err);
-        setError("Failed to load chat history. Please try again.");
-      } finally {
-        setLoadingHistory(false);
-      }
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognitionInstance = new SpeechRecognition();
+      recognitionInstance.continuous = true;
+      recognitionInstance.interimResults = true;
+      
+      recognitionInstance.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join('');
+        
+        setInput(transcript);
+      };
+      
+      recognitionInstance.onerror = (event) => {
+        console.error('Speech recognition error', event);
+        setIsListening(false);
+      };
+      
+      recognitionInstance.onend = () => {
+        setIsListening(false);
+      };
+      
+      setRecognition(recognitionInstance);
+    }
+  }, []);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (isAutoScrollEnabled && messagesEndRef.current) {
+      scrollToBottom();
+    }
+  }, [messages, isAutoScrollEnabled]);
+
+  // Detect scroll position to disable auto-scroll when user scrolls up
+  useEffect(() => {
+    const chatContainer = chatContainerRef.current;
+    if (!chatContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainer;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setIsAutoScrollEnabled(isNearBottom);
     };
 
-    if (documentId) {
-      fetchChatHistory();
-    }
-  }, [documentId]);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    chatContainer.addEventListener('scroll', handleScroll);
+    return () => chatContainer.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || loading) return;
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+  };
 
-    const userMessage = newMessage.trim();
-    setNewMessage("");
-
-    // Optimistically add user message to UI
-    setMessages((prev) => [
-      ...prev,
-      {
-        _id: `temp-${Date.now()}`,
-        user_message: userMessage,
-        ai_response: "",
-        used_tools: [],
-        isTemp: true,
-      },
-    ]);
-
-    try {
-      setLoading(true);
-      const response = await chatService.sendMessage(documentId, userMessage);
-
-      // Replace temp message with actual response
-      setMessages((prev) => prev.filter((msg) => !msg.isTemp).concat(response));
-    } catch (err) {
-      console.error("Error sending message:", err);
-      setError("Failed to send message. Please try again.");
-
-      // Remove temp message on error
-      setMessages((prev) => prev.filter((msg) => !msg.isTemp));
-    } finally {
-      setLoading(false);
+  const toggleSpeechRecognition = () => {
+    if (!recognition) return;
+    
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      recognition.start();
+      setIsListening(true);
     }
   };
 
-  const handleClearChat = async () => {
-    try {
-      setLoading(true);
-      await chatService.clearChatHistory(documentId);
-      setMessages([]);
-      setClearDialogOpen(false);
-    } catch (err) {
-      console.error("Error clearing chat:", err);
-      setError("Failed to clear chat history. Please try again.");
-    } finally {
-      setLoading(false);
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+    
+    const userMessage = {
+      role: 'user',
+      content: input,
+      timestamp: new Date().toISOString(),
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsTyping(true);
+    setError(null);
+    
+    // Cancel any previous ongoing requests
+    if (cancelTokenRef.current) {
+      cancelTokenRef.current.cancel('New message sent');
     }
+    
+    // Create a new cancel token for this request
+    cancelTokenRef.current = axios.CancelToken.source();
+    
+    try {
+      const response = await axios.post(
+        `http://localhost:8000/chat/${documentId}/`, 
+        { 
+          query: input 
+        },
+        {
+          cancelToken: cancelTokenRef.current.token
+        }
+      );
+      
+      const responseMessage = {
+        role: 'assistant',
+        content: response.data.response,
+        timestamp: new Date().toISOString(),
+        sources: response.data.sources || []
+      };
+      
+      setMessages(prev => [...prev, responseMessage]);
+    } catch (err) {
+      if (!axios.isCancel(err)) {
+        console.error('Error sending message:', err);
+        setError('Failed to get a response. Please try again.');
+      }
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const stopResponse = () => {
+    if (cancelTokenRef.current) {
+      cancelTokenRef.current.cancel('User stopped response');
+      setIsTyping(false);
+    }
+  };
+
+  const handleScrollToBottom = () => {
+    scrollToBottom();
+    setIsAutoScrollEnabled(true);
   };
 
   return (
     <Paper
       elevation={3}
-      sx={{ height: "100%", display: "flex", flexDirection: "column" }}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        borderRadius: 2,
+        overflow: 'hidden',
+        backgroundColor: theme.palette.background.paper,
+      }}
     >
-      {/* Chat header */}
+      {/* Chat Header */}
       <Box
         sx={{
           p: 2,
-          borderBottom: "1px solid rgba(0,0,0,0.1)",
-          bgcolor: "primary.main",
-          color: "white",
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          backgroundColor: alpha(theme.palette.background.paper, 0.8),
+          backdropFilter: 'blur(10px)',
         }}
       >
-        <Typography variant='h6' noWrap>
-          Chat with Document: {documentTitle}
+        <Typography variant="h6">
+          Chat with: {documentName}
         </Typography>
       </Box>
-
-      {/* Error alert */}
-      {error && (
-        <Alert severity='error' onClose={() => setError(null)} sx={{ m: 1 }}>
-          {error}
-        </Alert>
+      
+      {/* Messages Container */}
+      <Box
+        ref={chatContainerRef}
+        sx={{
+          flexGrow: 1,
+          overflowY: 'auto',
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <AnimatePresence>
+          {messages.map((message, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ChatBubble message={message} />
+            </motion.div>
+          ))}
+          
+          {isTyping && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  alignSelf: 'flex-start',
+                  p: 2,
+                  borderRadius: 2,
+                  maxWidth: '80%',
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                }}
+              >
+                <CircularProgress size={20} thickness={4} sx={{ mr: 2 }} />
+                <Typography>AI is thinking...</Typography>
+              </Box>
+            </motion.div>
+          )}
+          
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  alignSelf: 'center',
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: alpha(theme.palette.error.main, 0.1),
+                  color: theme.palette.error.main,
+                }}
+              >
+                <Typography>{error}</Typography>
+              </Box>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        <div ref={messagesEndRef} />
+      </Box>
+      
+      {/* Scroll to Bottom Button (only visible when auto-scroll is disabled) */}
+      {!isAutoScrollEnabled && (
+        <Box 
+          sx={{ 
+            position: 'absolute', 
+            bottom: 80, 
+            right: 20,
+            zIndex: 2 
+          }}
+        >
+          <Tooltip title="Scroll to bottom">
+            <IconButton
+              onClick={handleScrollToBottom}
+              sx={{
+                backgroundColor: theme.palette.background.paper,
+                boxShadow: theme.shadows[3],
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                },
+              }}
+            >
+              <ExpandMoreIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
       )}
-
-      {/* Messages area */}
+      
+      {/* Input Area */}
       <Box
         sx={{
           p: 2,
-          flexGrow: 1,
-          overflow: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-          bgcolor: "#f5f5f5",
-          maxHeight: "60vh",
-          minHeight: "300px",
+          borderTop: `1px solid ${theme.palette.divider}`,
+          backgroundColor: alpha(theme.palette.background.paper, 0.9),
+          backdropFilter: 'blur(10px)',
         }}
       >
-        {loadingHistory ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "100%",
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : messages.length === 0 ? (
-          <Box sx={{ textAlign: "center", opacity: 0.7, my: 4 }}>
-            <Typography variant='body1'>
-              No messages yet. Start by asking a question about this document.
-            </Typography>
-          </Box>
-        ) : (
-          messages.map((message, index) => (
-            <React.Fragment key={message._id || `msg-${index}`}>
-              {/* User message */}
-              <Box
-                sx={{
-                  alignSelf: "flex-end",
-                  bgcolor: "primary.main",
-                  color: "white",
-                  p: 2,
-                  borderRadius: 2,
-                  maxWidth: "80%",
-                  wordBreak: "break-word",
-                }}
-              >
-                <Typography variant='body1'>{message.user_message}</Typography>
-              </Box>
-
-              {/* AI response */}
-              <Box
-                sx={{
-                  alignSelf: "flex-start",
-                  bgcolor: "white",
-                  p: 2,
-                  borderRadius: 2,
-                  maxWidth: "80%",
-                  minWidth: "200px",
-                  boxShadow: 1,
-                  opacity: message.isTemp ? 0.7 : 1,
-                }}
-              >
-                {message.isTemp ? (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CircularProgress size={20} />
-                    <Typography variant='body2' color='text.secondary'>
-                      Generating response...
-                    </Typography>
-                  </Box>
-                ) : (
-                  <>
-                    <Box className='markdown-content' sx={{ pb: 1 }}>
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                        components={{
-                          // Add custom components for better rendering
-                          table: ({ node, ...props }) => (
-                            <Paper
-                              elevation={0}
-                              sx={{ overflow: "hidden", mb: 2, width: "100%" }}
-                            >
-                              <table
-                                {...props}
-                                style={{
-                                  width: "100%",
-                                  borderCollapse: "collapse",
-                                }}
-                              />
-                            </Paper>
-                          ),
-                          th: ({ node, ...props }) => (
-                            <th
-                              {...props}
-                              style={{
-                                backgroundColor: "#f5f7fa",
-                                fontWeight: "bold",
-                                padding: "8px 10px",
-                                border: "1px solid #e0e0e0",
-                                textAlign: "left",
-                              }}
-                            />
-                          ),
-                          td: ({ node, ...props }) => (
-                            <td
-                              {...props}
-                              style={{
-                                padding: "8px 10px",
-                                border: "1px solid #e0e0e0",
-                              }}
-                            />
-                          ),
-                          // Limited heading sizes in chat messages
-                          h1: ({ node, ...props }) => (
-                            <Typography
-                              variant='h6'
-                              color='primary'
-                              gutterBottom
-                              sx={{ mt: 1, fontWeight: "bold" }}
-                              {...props}
-                            />
-                          ),
-                          h2: ({ node, ...props }) => (
-                            <Typography
-                              variant='subtitle1'
-                              gutterBottom
-                              sx={{ mt: 1, fontWeight: "bold" }}
-                              {...props}
-                            />
-                          ),
-                          h3: ({ node, ...props }) => (
-                            <Typography
-                              variant='subtitle2'
-                              gutterBottom
-                              sx={{ mt: 0.5, fontWeight: "bold" }}
-                              {...props}
-                            />
-                          ),
-                          // Make links open in new tab
-                          a: ({ node, children, ...props }) => (
-                            <a
-                              target='_blank'
-                              rel='noopener noreferrer'
-                              aria-label={
-                                typeof children === "string"
-                                  ? children
-                                  : "External link"
-                              }
-                              {...props}
-                            >
-                              {children}
-                            </a>
-                          ),
-                          // Format lists better
-                          ul: ({ node, ...props }) => (
-                            <Box
-                              component='ul'
-                              sx={{ pl: 2, my: 1 }}
-                              {...props}
-                            />
-                          ),
-                          ol: ({ node, ...props }) => (
-                            <Box
-                              component='ol'
-                              sx={{ pl: 2, my: 1 }}
-                              {...props}
-                            />
-                          ),
-                          li: ({ node, ...props }) => (
-                            <Box component='li' sx={{ my: 0.5 }} {...props} />
-                          ),
-                        }}
-                      >
-                        {message.ai_response}
-                      </ReactMarkdown>
-                    </Box>
-
-                    {message.used_tools?.length > 0 &&
-                      message.used_tools[0]?.tool_name === "search" && (
-                        <Box
-                          sx={{
-                            mt: 1,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                            fontSize: "0.75rem",
-                            color: "text.secondary",
-                          }}
-                        >
-                          <SearchIcon fontSize='inherit' />
-                          <Typography variant='caption'>
-                            Web search was used to enhance response
-                          </Typography>
-                        </Box>
-                      )}
-                  </>
-                )}
-              </Box>
-            </React.Fragment>
-          ))
-        )}
-        <div ref={messagesEndRef} />
-      </Box>
-
-      {/* Input area */}
-      <Box
-        sx={{ p: 2, borderTop: "1px solid rgba(0,0,0,0.1)", bgcolor: "white" }}
-      >
-        <form
-          onSubmit={handleSendMessage}
-          style={{ display: "flex", gap: "8px" }}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: 1,
+          }}
         >
           <TextField
             fullWidth
-            variant='outlined'
-            placeholder='Ask about this document...'
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            disabled={loading || loadingHistory}
-            size='small'
+            placeholder="Ask something about this document..."
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            multiline
+            maxRows={4}
+            variant="outlined"
+            sx={{
+              '.MuiOutlinedInput-root': {
+                borderRadius: 3,
+                backgroundColor: theme.palette.background.default,
+              },
+            }}
           />
-          <Tooltip title='Send message'>
-            <span>
-              <Button
-                variant='contained'
-                color='primary'
-                type='submit'
-                disabled={!newMessage.trim() || loading || loadingHistory}
-                endIcon={
-                  loading ? (
-                    <CircularProgress size={20} color='inherit' />
-                  ) : (
-                    <SendIcon />
-                  )
-                }
-              >
-                Send
-              </Button>
-            </span>
-          </Tooltip>
-          <Tooltip title='Clear chat history'>
-            <span>
-              <IconButton
-                color='error'
-                disabled={messages.length === 0 || loading || loadingHistory}
-                onClick={() => setClearDialogOpen(true)}
-              >
-                <DeleteSweepIcon />
+          
+          {isTyping ? (
+            <Tooltip title="Stop generating">
+              <IconButton color="error" onClick={stopResponse}>
+                <StopIcon />
               </IconButton>
-            </span>
-          </Tooltip>
-        </form>
+            </Tooltip>
+          ) : (
+            <>
+              {recognition && (
+                <Tooltip title={isListening ? "Stop listening" : "Voice input"}>
+                  <IconButton 
+                    color={isListening ? "primary" : "default"} 
+                    onClick={toggleSpeechRecognition}
+                  >
+                    {isListening ? <AutorenewIcon className="rotating" /> : <MicIcon />}
+                  </IconButton>
+                </Tooltip>
+              )}
+              
+              <Tooltip title="Send message">
+                <IconButton 
+                  color="primary" 
+                  onClick={sendMessage} 
+                  disabled={!input.trim()}
+                >
+                  <SendIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+        </Box>
       </Box>
-
-      {/* Clear chat confirmation dialog */}
-      <Dialog open={clearDialogOpen} onClose={() => setClearDialogOpen(false)}>
-        <DialogTitle>Clear Chat History</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to clear all chat messages? This cannot be
-            undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setClearDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleClearChat} color='error'>
-            Clear
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Paper>
   );
 };

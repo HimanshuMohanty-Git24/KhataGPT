@@ -1,172 +1,293 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Typography,
-  Paper,
-  Chip,
-  Box,
-  Grid,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
+import React, { useState } from 'react';
+import { 
+  Box, 
+  List, 
+  ListItem, 
+  ListItemText, 
+  ListItemAvatar, 
+  Avatar, 
+  IconButton, 
+  Typography, 
+  Divider, 
+  Menu, 
+  MenuItem, 
+  Chip, 
+  Tooltip, 
+  useTheme, 
+  alpha,
+  Skeleton,
+  ListItemIcon
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ChatIcon from '@mui/icons-material/Chat';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
+import { useNavigate } from 'react-router-dom';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DescriptionIcon from '@mui/icons-material/Description';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import documentService from '../../services/documentService';
+import ImageIcon from '@mui/icons-material/Image';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import ArticleIcon from '@mui/icons-material/Article';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import { formatDate, formatFileSize } from '../../utils/formatters';
+import { getFileType } from '../../utils/helpers';
 
-const getDocTypeIcon = (docType) => {
-  switch (docType) {
-    case 'receipt':
-      return <ReceiptIcon />;
-    case 'menu':
-      return <MenuBookIcon />;
-    case 'form':
-      return <FormatListBulletedIcon />;
-    default:
-      return <DescriptionIcon />;
-  }
-};
-
-const DocumentList = ({ documents, onDeleteDocument }) => {
+/**
+ * Component for displaying documents in a list format
+ */
+const DocumentList = ({ 
+  documents = [], 
+  loading = false, 
+  onDelete, 
+  onReprocess,
+  emptyMessage = "No documents found."
+}) => {
+  const theme = useTheme();
   const navigate = useNavigate();
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [documentToDelete, setDocumentToDelete] = React.useState(null);
-
-  const handleViewDocument = (documentId) => {
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  
+  const handleOpenMenu = (event, document) => {
+    event.stopPropagation();
+    setMenuAnchorEl(event.currentTarget);
+    setSelectedDocument(document);
+  };
+  
+  const handleCloseMenu = () => {
+    setMenuAnchorEl(null);
+    setSelectedDocument(null);
+  };
+  
+  const handleDelete = () => {
+    if (selectedDocument && onDelete) {
+      onDelete(selectedDocument.id);
+    }
+    handleCloseMenu();
+  };
+  
+  const handleReprocess = () => {
+    if (selectedDocument && onReprocess) {
+      onReprocess(selectedDocument.id);
+    }
+    handleCloseMenu();
+  };
+  
+  const handleOpenDocument = (documentId) => {
     navigate(`/documents/${documentId}`);
   };
-
-  const handleDeleteClick = (document) => {
-    setDocumentToDelete(document);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (documentToDelete) {
-      onDeleteDocument(documentToDelete._id);
+  
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'processed':
+        return 'success';
+      case 'processing':
+        return 'warning';
+      case 'failed':
+        return 'error';
+      default:
+        return 'default';
     }
-    setDeleteDialogOpen(false);
-    setDocumentToDelete(null);
   };
-
-  if (!documents.length) {
+  
+  const getFileTypeIcon = (filename, mimeType) => {
+    const fileType = getFileType(filename, mimeType);
+    
+    switch (fileType) {
+      case 'document':
+        return <ArticleIcon />;
+      case 'pdf':
+        return <PictureAsPdfIcon />;
+      case 'image':
+        return <ImageIcon />;
+      case 'spreadsheet':
+        return <DescriptionIcon />;
+      default:
+        return <InsertDriveFileIcon />;
+    }
+  };
+  
+  if (loading) {
     return (
-      <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Typography variant="h6" color="text.secondary">
-          No documents found
+      <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+        {[1, 2, 3, 4, 5].map((_, index) => (
+          <React.Fragment key={index}>
+            <ListItem
+              alignItems="flex-start"
+              sx={{ 
+                py: 2,
+                cursor: 'pointer',
+              }}
+            >
+              <ListItemAvatar>
+                <Skeleton variant="circular" width={40} height={40} />
+              </ListItemAvatar>
+              <ListItemText
+                primary={<Skeleton variant="text" width="60%" />}
+                secondary={
+                  <React.Fragment>
+                    <Skeleton variant="text" width="40%" />
+                    <Skeleton variant="text" width="30%" />
+                  </React.Fragment>
+                }
+              />
+              <Skeleton variant="circular" width={40} height={40} />
+            </ListItem>
+            {index < 4 && <Divider component="li" />}
+          </React.Fragment>
+        ))}
+      </List>
+    );
+  }
+  
+  if (documents.length === 0) {
+    return (
+      <Box sx={{ py: 4, textAlign: 'center' }}>
+        <Typography variant="body1" color="textSecondary">
+          {emptyMessage}
         </Typography>
-        <Button 
-          variant="contained" 
-          onClick={() => navigate('/documents/new')}
-          sx={{ mt: 2 }}
-        >
-          Upload your first document
-        </Button>
       </Box>
     );
   }
-
+  
   return (
-    <>
-      <List>
-        {documents.map((document) => (
-          <Paper 
-            key={document._id} 
-            elevation={1}
-            sx={{ mb: 2, borderRadius: 2, overflow: 'hidden' }}
+    <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 1 }}>
+      {documents.map((document, index) => (
+        <React.Fragment key={document.id || index}>
+          <ListItem
+            alignItems="flex-start"
+            sx={{ 
+              py: 2,
+              cursor: 'pointer',
+              transition: 'background-color 0.2s',
+              '&:hover': {
+                bgcolor: alpha(theme.palette.primary.main, 0.05),
+              }
+            }}
+            onClick={() => handleOpenDocument(document.id)}
           >
-            <ListItem 
-              button 
-              onClick={() => handleViewDocument(document._id)}
-              sx={{ 
-                borderLeft: '4px solid',
-                borderLeftColor: document.doc_type === 'receipt' ? 'success.main' : 
-                                  document.doc_type === 'menu' ? 'info.main' : 
-                                  document.doc_type === 'form' ? 'warning.main' : 'primary.main'
-              }}
-            >
-              <Grid container spacing={2} alignItems="center">
-                <Grid item>
-                  {getDocTypeIcon(document.doc_type)}
-                </Grid>
-                <Grid item xs>
-                  <ListItemText
-                    primary={document.title}
-                    secondary={
-                      <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography variant="body2" component="span">
-                          {documentService.formatDate(document.created_at)}
-                        </Typography>
-                        {document.chat_count > 0 && (
-                          <Chip 
-                            icon={<ChatIcon fontSize="small" />} 
-                            label={`${document.chat_count} chats`}
-                            size="small" 
-                            sx={{ fontSize: '0.7rem' }}
-                          />
-                        )}
-                      </Box>
-                    }
-                  />
-                </Grid>
-                <Grid item>
+            <ListItemAvatar>
+              <Avatar 
+                sx={{ 
+                  bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                  color: theme.palette.primary.main 
+                }}
+              >
+                {getFileTypeIcon(document.filename, document.mime_type)}
+              </Avatar>
+            </ListItemAvatar>
+            
+            <ListItemText
+              primary={
+                <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+                  <Typography 
+                    variant="subtitle1" 
+                    component="span" 
+                    sx={{ 
+                      fontWeight: 500,
+                      mr: 1,
+                      maxWidth: { xs: '180px', sm: '300px', md: '100%' },
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {document.filename}
+                  </Typography>
                   <Chip 
-                    label={documentService.getDocTypeLabel(document.doc_type)} 
-                    color={document.doc_type === 'receipt' ? 'success' : 
-                           document.doc_type === 'menu' ? 'info' : 
-                           document.doc_type === 'form' ? 'warning' : 'primary'}
+                    label={document.status || 'unknown'}
+                    color={getStatusColor(document.status)}
                     size="small"
+                    sx={{ height: 20, fontSize: '0.7rem' }}
                   />
-                </Grid>
-                <Grid item>
-                  <ListItemSecondaryAction>
-                    <IconButton 
-                      edge="end" 
-                      aria-label="delete"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(document);
+                </Box>
+              }
+              secondary={
+                <React.Fragment>
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="textSecondary"
+                  >
+                    {formatDate(document.uploaded_at)} • {formatFileSize(document.file_size || 0)}
+                    {document.pages && ` • ${document.pages} pages`}
+                  </Typography>
+                  {document.description && (
+                    <Typography
+                      component="div"
+                      variant="body2"
+                      color="textSecondary"
+                      sx={{ 
+                        mt: 0.5,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
                       }}
                     >
-                      <DeleteIcon />
-                    </IconButton>
-                  </ListItemSecondaryAction>
-                </Grid>
-              </Grid>
-            </ListItem>
-          </Paper>
-        ))}
-      </List>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+                      {document.description}
+                    </Typography>
+                  )}
+                </React.Fragment>
+              }
+            />
+            
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <IconButton 
+                edge="end" 
+                onClick={(e) => handleOpenMenu(e, document)}
+                sx={{ color: theme.palette.text.secondary }}
+              >
+                <MoreVertIcon />
+              </IconButton>
+            </Box>
+          </ListItem>
+          
+          {index < documents.length - 1 && <Divider component="li" />}
+        </React.Fragment>
+      ))}
+      
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleCloseMenu}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        PaperProps={{
+          elevation: 2,
+          sx: { minWidth: 180 }
+        }}
       >
-        <DialogTitle>Delete Document</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete "{documentToDelete?.title}"? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} color="error">Delete</Button>
-        </DialogActions>
-      </Dialog>
-    </>
+        <MenuItem 
+          onClick={() => {
+            handleCloseMenu();
+            if (selectedDocument) {
+              handleOpenDocument(selectedDocument.id);
+            }
+          }}
+        >
+          <ListItemIcon>
+            <VisibilityIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>View Document</ListItemText>
+        </MenuItem>
+        
+        {onReprocess && (
+          <MenuItem onClick={handleReprocess}>
+            <ListItemIcon>
+              <AutorenewIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Reprocess</ListItemText>
+          </MenuItem>
+        )}
+        
+        <MenuItem onClick={handleDelete}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Delete</ListItemText>
+        </MenuItem>
+      </Menu>
+    </List>
   );
 };
 
