@@ -1,70 +1,261 @@
-# Getting Started with Create React App
+# KathaGPT Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React-based frontend for the KathaGPT document analysis system. This application provides an intuitive interface for uploading, analyzing and chatting with documents using Google's Gemini AI.
+
+## Technology Stack
+
+- **React 19.0.0**: Modern UI library 
+- **Material-UI 6.4.8**: Component framework
+- **React Router 7.4.0**: Client-side routing
+- **Axios 1.8.4**: HTTP client
+- **React Markdown 10.1.0**: Markdown rendering
+- **Remark/Rehype**: Markdown plugins
+- **Web Vitals**: Performance monitoring
+
+## Project Structure
+
+```
+frontend/
+├── public/                # Static files
+│   ├── index.html        # HTML template
+│   └── manifest.json     # PWA manifest
+├── src/
+│   ├── components/       # Reusable components
+│   │   ├── chat/        # Chat related components
+│   │   ├── common/      # Shared components
+│   │   └── documents/   # Document components
+│   ├── pages/           # Route pages
+│   ├── services/        # API services
+│   └── styles/          # Global styles
+└── package.json         # Dependencies
+```
+
+## Features
+
+### Document Management
+- Upload multiple document types (receipts, menus, forms)
+- Automatic document classification
+- Smart title generation
+- Full-text search
+- Grid/List view options
+- Real-time document processing status
+- Delete with confirmation
+
+### Chat Interface
+- Context-aware document chat
+- Real-time AI responses
+- Markdown formatting
+- Code syntax highlighting
+- Table formatting
+- Web search integration
+- Chat history tracking
+- Message timestamps
+
+### UI Features
+- Responsive design
+- Dark/Light theme
+- Loading states
+- Error handling
+- Toast notifications
+- Drag & drop uploads
+- Mobile-optimized views
+- Keyboard shortcuts
+
+## Setup & Installation
+
+1. Clone repository:
+```bash
+git clone https://github.com/yourusername/kathagpt-frontend.git
+cd kathagpt-frontend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Configure environment:
+Create `.env` file:
+```env
+REACT_APP_API_URL=http://localhost:8000
+```
+
+4. Start development server:
+```bash
+npm start
+```
 
 ## Available Scripts
 
-In the project directory, you can run:
+- `npm start`: Run development server
+- `npm build`: Create production build
+- `npm test`: Run test suite
+- `npm eject`: Eject from Create React App
+- `npm lint`: Run ESLint
+- `npm format`: Format code with Prettier
 
-### `npm start`
+## API Integration
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Document Endpoints
+- `POST /documents`: Upload document
+- `GET /documents`: List documents
+- `GET /documents/{id}`: Get document
+- `DELETE /documents/{id}`: Delete document
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Chat Endpoints
+- `POST /chat`: Send message
+- `GET /chat/{documentId}`: Get chat history
+- `DELETE /chat/{documentId}`: Clear chat
 
-### `npm test`
+## Component Overview
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### ChatInterface
+```jsx
+<ChatInterface
+  documentId="string"
+  documentTitle="string"
+/>
+```
 
-### `npm run build`
+### DocumentList
+```jsx
+<DocumentList
+  documents={documents}
+  onDeleteDocument={handleDelete}
+/>
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### DocumentUploader
+```jsx
+<DocumentUploader
+  onUploadComplete={handleUpload}
+/>
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## State Management
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- React hooks for local state
+- Context for theme/auth
+- URL params for document/chat state
+- Local storage for preferences
 
-### `npm run eject`
+## Error Handling
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- API error interceptors
+- User-friendly error messages
+- Retry mechanisms
+- Offline detection
+- File validation
+- Input sanitization
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Performance Optimizations
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- Image compression
+- Lazy loading
+- Code splitting
+- Debounced search
+- Memoized components
+- Virtual scrolling for long lists
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Security Features
 
-## Learn More
+- Input validation
+- File type checking
+- Size limits
+- Markdown sanitization
+- Error message sanitization
+- Secure HTTP headers
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Browser Support
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- Chrome/Edge (latest 2)
+- Firefox (latest 2)
+- Safari (latest 2)
+- Mobile browsers
 
-### Code Splitting
+## Development Guidelines
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Code Style
+- Functional components
+- TypeScript
+- ESLint + Prettier
+- SOLID principles
+- React best practices
 
-### Analyzing the Bundle Size
+### Git Workflow
+1. Create feature branch
+2. Implement changes
+3. Run tests
+4. Create pull request
+5. Code review
+6. Merge to main
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Testing
 
-### Making a Progressive Web App
+### Unit Tests
+```bash
+npm test
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Component Tests
+```bash
+npm test:components
+```
 
-### Advanced Configuration
+### E2E Tests
+```bash
+npm test:e2e
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Deployment
 
-### Deployment
+1. Build production assets:
+```bash
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+2. Deploy to hosting:
+```bash
+npm run deploy
+```
 
-### `npm run build` fails to minify
+## Contributing
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+1. Fork repository
+2. Create feature branch
+3. Commit changes
+4. Push to branch
+5. Create pull request
+
+## Troubleshooting
+
+### Common Issues
+- API connection errors
+- File upload failures
+- Chat disconnections
+- Browser compatibility
+
+### Solutions
+- Check API URL in .env
+- Verify file types/sizes
+- Clear browser cache
+- Update dependencies
+
+## License
+
+MIT License - see LICENSE.md
+
+## Support
+
+- GitHub Issues
+- Documentation Wiki
+- Community Discord
+
+## Changelog
+
+### v2.0.0
+- Gemini AI integration
+- New chat interface
+- Performance improvements
+- Enhanced document processing
+
