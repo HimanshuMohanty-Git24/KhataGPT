@@ -1,4 +1,5 @@
 # KathaGPT v2
+![logo](https://github.com/user-attachments/assets/6aa214b8-a363-4ea2-8410-562ecab2a251)
 
 An AI-powered document analysis and chat application that helps users extract, understand, and interact with information from various types of documents using Google's Gemini AI.
 
