@@ -1,5 +1,9 @@
-# KathaGPT v2
+<div align="center">
+  
+# KathaGPT
 ![logo](https://github.com/user-attachments/assets/6aa214b8-a363-4ea2-8410-562ecab2a251)
+
+</div>
 
 An AI-powered document analysis and chat application that helps users extract, understand, and interact with information from various types of documents using Google's Gemini AI.
 
@@ -76,19 +80,19 @@ KathaGPTv2/
 │   │       └── search_utils.py
 │   └── requirements.txt
 └── frontend/
-    ├── public/
-    │   ├── index.html
-    │   └── manifest.json
-    ├── src/
-    │   ├── components/
-    │   │   ├── chat/
-    │   │   ├── common/
-    │   │   └── documents/
-    │   ├── pages/
-    │   ├── services/
-    │   └── styles/
-    ├── package.json
-    └── .env
+  ├── public/
+  │   ├── index.html
+  │   └── manifest.json
+  ├── src/
+  │   ├── components/
+  │   │   ├── chat/
+  │   │   ├── common/
+  │   │   └── documents/
+  │   ├── pages/
+  │   ├── services/
+  │   └── styles/
+  ├── package.json
+  └── .env
 ```
 
 ## Setup Instructions
