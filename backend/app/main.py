@@ -7,7 +7,7 @@ from app.config import API_PREFIX
 
 # Create FastAPI app
 app = FastAPI(
-    title="KathaGPT API",
+    title="KhataGPT API",
     description="API for document analysis and chat using Gemini AI",
     version="2.0.0"
 )
@@ -34,7 +34,7 @@ app.include_router(chat_router, prefix=f"{API_PREFIX}/chat")
 @app.get("/")
 async def root():
     return {
-        "message": "Welcome to KathaGPT API", 
+        "message": "Welcome to KhataGPT API", 
         "version": "2.0.0",
         "docs_url": "/docs"
     }

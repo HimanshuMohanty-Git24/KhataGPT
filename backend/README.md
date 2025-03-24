@@ -1,6 +1,6 @@
-# KathaGPT Backend
+# KhataGPT Backend
 
-Python FastAPI backend for KathaGPT document analysis system powered by Gemini AI.
+Python FastAPI backend for KhataGPT document analysis system powered by Gemini AI.
 
 ## Technology Stack
 
@@ -55,7 +55,7 @@ pip install -r requirements.txt
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 MONGODB_URI=mongodb://localhost:27017/
-MONGODB_DB_NAME=kathagptv2
+MONGODB_DB_NAME=KhataGPTv2
 ```
 
 4. Start MongoDB server (make sure MongoDB is installed)
@@ -183,12 +183,12 @@ pytest
 
 1. Build Docker image:
 ```bash
-docker build -t kathagpt-backend .
+docker build -t KhataGPT-backend .
 ```
 
 2. Run container:
 ```bash
-docker run -p 8000:8000 kathagpt-backend
+docker run -p 8000:8000 KhataGPT-backend
 ```
 
 ## API Documentation UI

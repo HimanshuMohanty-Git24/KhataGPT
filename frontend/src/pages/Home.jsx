@@ -9,7 +9,7 @@ const Home = () => {
     <Container maxWidth="md">
       <Box sx={{ my: 4, textAlign: 'center' }}>
         <Typography variant="h2" component="h1" gutterBottom>
-          KathaGPT
+          KhataGPT
         </Typography>
         <Typography variant="h5" color="text.secondary" paragraph>
           Document Analysis with AI

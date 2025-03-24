@@ -1,6 +1,6 @@
 <div align="center">
   
-# KathaGPT
+# KhataGPT
 ![logo](https://github.com/user-attachments/assets/6aa214b8-a363-4ea2-8410-562ecab2a251)
 
 </div>
@@ -58,7 +58,7 @@ An AI-powered document analysis and chat application that helps users extract, u
 ## Project Structure
 
 ```
-KathaGPTv2/
+KhataGPTv2/
 ├── backend/
 │   ├── app/
 │   │   ├── config.py           # Configuration settings
@@ -121,7 +121,7 @@ pip install -r requirements.txt
 ```
 GEMINI_API_KEY=your_gemini_api_key
 MONGODB_URI=mongodb://localhost:27017/
-MONGODB_DB_NAME=kathagptv2
+MONGODB_DB_NAME=KhataGPTv2
 ```
 
 4. Start the server:

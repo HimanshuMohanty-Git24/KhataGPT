@@ -66,7 +66,7 @@ const Header = () => {
               flexGrow: isMobile ? 0 : 1,
             }}
           >
-            KathaGPT
+            KhataGPT
           </Typography>
 
           {isMobile ? (

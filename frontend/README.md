@@ -1,6 +1,6 @@
-# KathaGPT Frontend
+# KhataGPT Frontend
 
-React-based frontend for the KathaGPT document analysis system. This application provides an intuitive interface for uploading, analyzing and chatting with documents using Google's Gemini AI.
+React-based frontend for the KhataGPT document analysis system. This application provides an intuitive interface for uploading, analyzing and chatting with documents using Google's Gemini AI.
 
 ## Technology Stack
 
@@ -65,8 +65,8 @@ frontend/
 
 1. Clone repository:
 ```bash
-git clone https://github.com/yourusername/kathagpt-frontend.git
-cd kathagpt-frontend
+git clone https://github.com/yourusername/KhataGPT-frontend.git
+cd KhataGPT-frontend
 ```
 
 2. Install dependencies:
