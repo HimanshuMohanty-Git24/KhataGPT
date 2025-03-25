@@ -1,47 +1,79 @@
-# KhataGPT Backend
+<div align="center">
 
-Python FastAPI backend for KhataGPT document analysis system powered by Gemini AI.
+# KhathaGPT Backend
 
-## Technology Stack
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python_3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Google Gemini](https://img.shields.io/badge/Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=for-the-badge)](https://github.com/psf/black)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-- **FastAPI**: Modern Python web framework for building APIs
-- **MongoDB**: NoSQL database for document storage
-- **Google Gemini AI**: Latest AI model for text extraction and chat
-- **PIL**: Image processing library
-- **BeautifulSoup4**: Web scraping for enhanced responses
-- **Python-Multipart**: File upload handling
-- **Uvicorn**: ASGI server
+Modern API backend for intelligent document analysis powered by Google's Gemini AI
 
-## Project Structure
+[Getting Started](#-getting-started) • 
+[Features](#-features) •
+[Contributing](#-contributing)
+
+</div>
+
+---
+
+## 📖 Overview
+
+KhathaGPT's backend is built with FastAPI and MongoDB, leveraging Google's Gemini AI for advanced document analysis. It provides robust APIs for document processing, intelligent chat, and search capabilities.
+
+## 🛠️ Technology Stack
+
+- **FastAPI**: High-performance web framework
+- **MongoDB**: Scalable document database
+- **Google Gemini AI**: State-of-the-art AI model
+- **Pillow**: Image processing
+- **BeautifulSoup4**: Web content parsing
+- **Python-Multipart**: File handling
+- **Uvicorn**: Lightning-fast ASGI server
+- **pytest**: Testing framework
+- **Docker**: Containerization
+
+## 🏗️ Project Structure
 
 ```
 backend/
 ├── app/
-│   ├── config.py           # Configuration settings
-│   ├── database.py         # MongoDB connection
-│   ├── main.py            # Application entry point
-│   ├── models/            # Database models
-│   │   ├── chat.py        # Chat message model
-│   │   └── document.py    # Document model
-│   ├── routes/            # API endpoints
-│   │   ├── chat.py        # Chat endpoints
-│   │   └── documents.py   # Document endpoints
-│   ├── services/          # Business logic
-│   │   ├── chat_service.py
-│   │   ├── document_processor.py
-│   │   ├── document_service.py
-│   │   └── gemini_service.py
-│   └── utils/             # Helper functions
-│       ├── db_utils.py
-│       ├── image_utils.py
-│       └── search_utils.py
-└── requirements.txt
+│   ├── config/           # Configuration and settings
+│   │   ├── __init__.py
+│   │   └── settings.py
+│   ├── core/            # Core functionality
+│   │   ├── security.py
+│   │   └── errors.py
+│   ├── models/          # Data models
+│   ├── routes/          # API endpoints
+│   ├── services/        # Business logic
+│   └── utils/           # Helper functions
+├── tests/               # Test suites
+├── docker/             # Docker configuration
+├── .env.example        # Environment template
+├── Dockerfile          # Docker build file
+├── docker-compose.yml  # Docker compose config
+├── requirements.txt    # Dependencies
+└── README.md          # Documentation
 ```
 
-## Setup Instructions
+## 🚀 Getting Started
 
-1. Create and activate virtual environment:
+### Prerequisites
+
+- Python 3.8+
+- MongoDB 4.4+
+- Google Gemini API key
+- Docker (optional)
+
+### Local Development Setup
+
+1. Clone and setup virtual environment:
 ```bash
+git clone https://github.com/KhataGPT/KhathaGPT.git
+cd KhathaGPT/backend
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 ```
@@ -51,148 +83,130 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables in `.env`:
-```env
-GEMINI_API_KEY=your_gemini_api_key
-MONGODB_URI=mongodb://localhost:27017/
-MONGODB_DB_NAME=KhataGPTv2
+3. Configure environment:
+```bash
+cp .env.example .env
+# Edit .env with your configurations
 ```
 
-4. Start MongoDB server (make sure MongoDB is installed)
-
-5. Run the server:
+4. Start the server:
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## API Documentation
+### Docker Setup
+
+```bash
+# Build and run using Docker
+docker-compose up --build
+
+# Run in detached mode
+docker-compose up -d
+```
+
+## 📚 API Documentation
+
+### Authentication
+
+All API endpoints require authentication using Bearer token:
+```http
+Authorization: Bearer <your_token>
+```
 
 ### Documents API
 
-#### Upload Document
-```http
-POST /api/v1/documents
-Content-Type: multipart/form-data
-
-file: <document_image>
-```
-
-#### List Documents
-```http
-GET /api/v1/documents
-```
-
-Query Parameters:
-- `search`: Optional search term
-
-#### Get Document
-```http
-GET /api/v1/documents/{document_id}
-```
-
-#### Delete Document
-```http
-DELETE /api/v1/documents/{document_id}
-```
+| Endpoint | Method | Description | Auth |
+|----------|--------|-------------|------|
+| `/api/v1/documents` | POST | Upload document | Required |
+| `/api/v1/documents` | GET | List documents | Required |
+| `/api/v1/documents/{id}` | GET | Get document | Required |
+| `/api/v1/documents/{id}` | DELETE | Delete document | Required |
 
 ### Chat API
 
-#### Send Message
-```http
-POST /api/v1/chat
-Content-Type: application/json
+| Endpoint | Method | Description | Auth |
+|----------|--------|-------------|------|
+| `/api/v1/chat` | POST | Send message | Required |
+| `/api/v1/chat/{id}` | GET | Get chat history | Required |
+| `/api/v1/chat/{id}` | DELETE | Clear chat history | Required |
 
-{
-  "document_id": "string",
-  "user_message": "string"
-}
-```
 
-#### Get Chat History
-```http
-GET /api/v1/chat/{document_id}
-```
+## ✨ Features
 
-#### Clear Chat History
-```http
-DELETE /api/v1/chat/{document_id}
-```
-
-## Features
-
-### Document Processing
-- Automatic document type detection
-- High-quality text extraction using Gemini AI
-- Smart title generation
-- Image optimization
-- Base64 image encoding
-- Document search capability
+### Document Intelligence
+- 🤖 AI-powered text extraction
+- 📝 Smart document classification
+- 🔍 Full-text search capability
+- 🖼️ Advanced image processing
+- 📊 Metadata generation
 
 ### Chat System
-- Context-aware document conversations
-- Web search integration for enhanced responses
-- Markdown formatting support
-- Chat history tracking
-- Tool usage tracking
+- 💬 Context-aware conversations
+- 🌐 Web search integration
+- ✍️ Markdown formatting
+- 📝 History tracking
+- 🛠️ Tool integration
 
-### Image Processing
-- Format conversion to JPG
-- Image resizing
-- Quality optimization
-- Base64 encoding/decoding
+### Security
+- 🔒 JWT authentication
+- 🛡️ Rate limiting
+- ✅ Input validation
+- 🔐 Data encryption
+- 📝 Audit logging
 
-### Search Integration
-- DuckDuckGo web search
-- Search result parsing
-- Context-aware query generation
+## 🧪 Testing
 
-## Error Handling
-
-The API includes comprehensive error handling:
-- Input validation
-- File type verification
-- Size limits
-- Database connection errors
-- AI processing errors
-
-## Development
-
-### Adding New Routes
-1. Create route file in `app/routes/`
-2. Define endpoints using FastAPI decorators
-3. Include router in `main.py`
-
-### Database Models
-1. Define Pydantic models in `app/models/`
-2. Add MongoDB interface methods
-3. Include validation and type hints
-
-### Services
-1. Add business logic in `app/services/`
-2. Keep services focused and modular
-3. Handle errors appropriately
-
-## Testing
-
-Run tests using pytest:
 ```bash
+# Run all tests
 pytest
+
+# Run with coverage
+pytest --cov=app
+
+# Generate coverage report
+pytest --cov=app --cov-report=html
 ```
 
-## Deployment
+## 🚢 Deployment
 
-1. Build Docker image:
+### Production Setup
+
+1. Configure production settings:
 ```bash
-docker build -t KhataGPT-backend .
+export ENVIRONMENT=production
+export API_KEY=your-secret-key
 ```
 
-2. Run container:
+2. Build optimized container:
 ```bash
-docker run -p 8000:8000 KhataGPT-backend
+docker build -t khathagpt-backend:prod -f docker/Dockerfile.prod .
 ```
 
-## API Documentation UI
+3. Run in production:
+```bash
+docker run -d -p 8000:8000 khathagpt-backend:prod
+```
 
-Access interactive API documentation:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'feat: add amazing feature'`)
+4. Push branch (`git push origin feature/amazing-feature`)
+5. Open pull request
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE)
+
+## 💬 Support
+
+- 💻 [GitHub Issues](https://github.com/KhataGPT/KhathaGPT/issues)
+
+---
+
+<div align="center">
+
+Made with ❤️ by the KhathaGPT Team
+
+</div>

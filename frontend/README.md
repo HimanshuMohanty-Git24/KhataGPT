@@ -82,7 +82,7 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/KhataGPT.git
+git clone https://github.com/KhataGPT/KhataGPT.git
 
 # Navigate to frontend
 cd KhataGPT/frontend
@@ -232,7 +232,7 @@ npm run analyze
 
 ## 💪 Support
 
-- [Issue Tracker](https://github.com/yourusername/KhataGPT/issues)
+- [Issue Tracker](https://github.com/KhataGPT/KhataGPT/issues)
 
 ## 📜 License
 
@@ -243,7 +243,7 @@ MIT License - see [LICENSE.md](LICENSE.md)
 <div align="center">
 
 Made with ❤️ by the KhathaGPT Team
-[GitHub](https://github.com/yourusername/KhataGPT) • 
+[GitHub](https://github.com/KhataGPT/KhataGPT) • 
 
 </div>
 

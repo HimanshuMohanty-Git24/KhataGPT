@@ -96,7 +96,7 @@ graph TB
 
 1. **Clone & Setup**
 ```bash
-git clone https://github.com/yourusername/KhataGPT.git
+git clone https://github.com/KhataGPT/KhataGPT.git
 cd KhataGPT
 ```
 
@@ -159,7 +159,7 @@ MIT License • [View License](LICENSE)
 ## 💬 Support
 
 - 📧 Email: codehimanshu24@gmail.com
-- 💻 [GitHub Issues](https://github.com/yourusername/KhataGPT/issues)
+- 💻 [GitHub Issues](https://github.com/KhataGPT/KhataGPT/issues)
 
 ---
 
@@ -167,7 +167,7 @@ MIT License • [View License](LICENSE)
 
 Made with ❤️ by the KhataGPT Team
 
-[![Stars](https://img.shields.io/github/stars/yourusername/KhataGPT?style=social)](https://github.com/yourusername/KhataGPT)
+[![Stars](https://img.shields.io/github/stars/KhataGPT/KhataGPT?style=social)](https://github.com/KhataGPT/KhataGPT)
 [![Follow](https://img.shields.io/twitter/follow/KhataGPT?style=social)](https://twitter.com/KhataGPT)
 
 </div>
