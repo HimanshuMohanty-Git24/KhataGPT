@@ -164,6 +164,10 @@ const getStatusInfo = (status) => {
       return { text: "Processing", color: "warning" };
     case "failed":
       return { text: "Failed", color: "error" };
+    case "unknown":
+    case undefined:
+    case null:
+      return { text: "Unknown", color: "default" };
     default:
       return { text: status || "Unknown", color: "default" };
   }
@@ -439,7 +443,7 @@ const DocumentCard = ({
                 {formatDocType(document.doc_type)}
               </Typography>
 
-              <Chip
+              {/* <Chip
                 size='small'
                 label={statusInfo.text}
                 color={statusInfo.color}
@@ -457,7 +461,7 @@ const DocumentCard = ({
                     0.08
                   )}`,
                 }}
-              />
+              /> */}
             </Box>
 
             {/* File Size */}
