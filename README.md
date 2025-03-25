@@ -1,223 +1,179 @@
 <div align="center">
-  
-# KhataGPT
-![logo](https://github.com/user-attachments/assets/6aa214b8-a363-4ea2-8410-562ecab2a251)
+
+# 📄 KhataGPT
+
+<img src="https://github.com/user-attachments/assets/6aa214b8-a363-4ea2-8410-562ecab2a251" width="200" height="200" />
+
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Google Gemini](https://img.shields.io/badge/Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+
+**🤖 AI-Powered Document Analysis & Chat Platform**
+
+[Getting Started](#getting-started) • [Features](#features) • [Documentation](#documentation) • [Contributing](#contributing)
 
 </div>
 
-An AI-powered document analysis and chat application that helps users extract, understand, and interact with information from various types of documents using Google's Gemini AI.
+## 🌟 Overview
 
-## Features
+KhataGPT is an intelligent document analysis platform that leverages Google's Gemini AI to transform how users interact with their documents. Extract, analyze, and chat with your documents using state-of-the-art AI technology.
 
-- **Document Upload & Analysis**
-  - Support for multiple document types (receipts, menus, forms, invoices, etc.)
-  - Automatic document type detection
-  - Smart title generation based on content
-  - Image optimization and processing
-  - High-quality text extraction using Gemini AI
+## ✨ Key Features
 
-- **Interactive Chat**
-  - Context-aware document conversations
-  - Intelligent information extraction
-  - Web search integration for enhanced responses
-  - Support for complex queries about document content
-  - Markdown formatting for clear responses
+### 📑 Document Intelligence
+- 🔍 Multi-format document support (PDF, DOC, Images)
+- 🤖 AI-powered text extraction & analysis
+- 📋 Smart categorization & tagging
+- 🖼️ Advanced image processing
+- 📝 Automatic metadata generation
 
-- **Document Management**
-  - Advanced search capabilities
-  - Document categorization
-  - Chat history tracking
-  - Document stats and metrics
-  - Bulk operations support
+### 💬 Interactive AI Chat
+- 🧠 Context-aware document conversations
+- 🌐 Web search integration
+- 📊 Structured data extraction
+- 🎯 Precision question answering
+- ✍️ Rich markdown responses
 
-- **Smart Search**
-  - Full-text search across documents
-  - Real-time search suggestions
-  - Search result highlighting
-  - Relevance-based sorting
+### 📂 Smart Management
+- 🔎 Full-text semantic search
+- 📱 Mobile-responsive interface
+- 🔄 Real-time sync
+- 📊 Analytics dashboard
+- 🔐 Secure document handling
 
-## Technology Stack
+## 🛠️ Tech Stack
+
+<table>
+<tr>
+<td>
 
 ### Backend
-- **FastAPI**: Modern Python web framework for building APIs
-- **MongoDB**: NoSQL database for flexible document storage
-- **Google Gemini AI**: Advanced AI model for text extraction and chat
-- **PIL**: Image processing and optimization
-- **BeautifulSoup4**: Web scraping for enhanced responses
-- **Python-Multipart**: File upload handling
-- **Uvicorn**: ASGI server implementation
+- ⚡ FastAPI
+- 🍃 MongoDB
+- 🤖 Google Gemini AI
+- 🖼️ PIL/Pillow
+- 🌐 BeautifulSoup4
+- 🚀 Uvicorn
+
+</td>
+<td>
 
 ### Frontend
-- **React**: UI component library
-- **Material-UI**: Modern React component framework
-- **React Router**: Client-side routing
-- **Axios**: HTTP client
-- **React Markdown**: Markdown rendering
-- **Remark/Rehype**: Markdown processing plugins
+- ⚛️ React
+- 🎨 Material-UI
+- 🛣️ React Router
+- 📡 Axios
+- 📝 React Markdown
+- 🎯 Redux Toolkit
 
-## Project Structure
+</td>
+</tr>
+</table>
 
-```
-KhataGPTv2/
-├── backend/
-│   ├── app/
-│   │   ├── config.py           # Configuration settings
-│   │   ├── database.py         # Database connection
-│   │   ├── main.py            # Application entry point
-│   │   ├── models/            # Database models
-│   │   │   ├── chat.py        # Chat message model
-│   │   │   └── document.py    # Document model
-│   │   ├── routes/            # API endpoints
-│   │   │   ├── chat.py        # Chat endpoints
-│   │   │   └── documents.py   # Document endpoints
-│   │   ├── services/          # Business logic
-│   │   │   ├── chat_service.py
-│   │   │   ├── document_service.py
-│   │   │   └── gemini_service.py
-│   │   └── utils/             # Helper functions
-│   │       ├── db_utils.py
-│   │       ├── image_utils.py
-│   │       └── search_utils.py
-│   └── requirements.txt
-└── frontend/
-  ├── public/
-  │   ├── index.html
-  │   └── manifest.json
-  ├── src/
-  │   ├── components/
-  │   │   ├── chat/
-  │   │   ├── common/
-  │   │   └── documents/
-  │   ├── pages/
-  │   ├── services/
-  │   └── styles/
-  ├── package.json
-  └── .env
+## 🏗️ Architecture
+
+```mermaid
+graph TB
+    A[Frontend] --> B[API Layer]
+    B --> C[Service Layer]
+    C --> D[(MongoDB)]
+    C --> E[Gemini AI]
+    C --> F[Image Processing]
+    C --> G[Search Engine]
 ```
 
-## Setup Instructions
+## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.8+
-- Node.js 14+
-- MongoDB 4.4+
-- Google Gemini API key
 
-### Backend Setup
+- 🐍 Python 3.8+
+- 📦 Node.js 14+
+- 🍃 MongoDB 4.4+
+- 🔑 Gemini API Key
 
-1. Create and activate virtual environment:
+### Quick Start
+
+1. **Clone & Setup**
 ```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+git clone https://github.com/yourusername/KhataGPT.git
+cd KhataGPT
 ```
 
-2. Install dependencies:
+2. **Backend Setup**
 ```bash
 cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. Configure environment variables in `.env`:
-```
-GEMINI_API_KEY=your_gemini_api_key
-MONGODB_URI=mongodb://localhost:27017/
-MONGODB_DB_NAME=KhataGPTv2
-```
-
-4. Start the server:
-```bash
-uvicorn app.main:app --reload --port 8000
-```
-
-### Frontend Setup
-
-1. Install dependencies:
+3. **Frontend Setup**
 ```bash
 cd frontend
 npm install
 ```
 
-2. Configure environment in `.env`:
-```
+4. **Environment Configuration**
+```env
+# Backend .env
+GEMINI_API_KEY=your_key_here
+MONGODB_URI=mongodb://localhost:27017/
+MONGODB_DB_NAME=KhataGPTv2
+
+# Frontend .env
 REACT_APP_API_URL=http://localhost:8000
 ```
 
-3. Start development server:
-```bash
-npm start
-```
+## 📚 Documentation
 
-## API Documentation
+### API Endpoints
 
-### Core Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/documents` | POST | Upload document |
+| `/api/v1/documents` | GET | List documents |
+| `/api/v1/chat` | POST | Send message |
+| `/api/v1/chat/{id}` | GET | Chat history |
 
-- **Documents**
-  - `POST /api/v1/documents`: Upload new document
-  - `GET /api/v1/documents`: List all documents
-  - `GET /api/v1/documents/{id}`: Get document details
-  - `DELETE /api/v1/documents/{id}`: Delete document
+Full documentation:
+- 📘 [Swagger UI](http://localhost:8000/docs)
+- 📗 [ReDoc](http://localhost:8000/redoc)
 
-- **Chat**
-  - `POST /api/v1/chat`: Send chat message
-  - `GET /api/v1/chat/{document_id}`: Get chat history
-  - `DELETE /api/v1/chat/{document_id}`: Clear chat history
+## 🤝 Contributing
 
-Full API documentation available at:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+1. Fork repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
 
-## Usage Examples
+## 🔒 Security
 
-### Document Upload
-```javascript
-const formData = new FormData();
-formData.append('file', documentFile);
+- 🛡️ Input sanitization
+- 🔐 JWT authentication
+- 📝 Input validation
+- 🚫 Rate limiting
+- 🔍 Security headers
 
-const response = await axios.post('/api/v1/documents', formData);
-const documentId = response.data._id;
-```
+## 📄 License
 
-### Chat Interaction
-```javascript
-const message = {
-  document_id: documentId,
-  user_message: "What is the total amount on this receipt?"
-};
+MIT License • [View License](LICENSE)
 
-const response = await axios.post('/api/v1/chat', message);
-const aiResponse = response.data.ai_response;
-```
+## 💬 Support
 
-## Contributing
+- 📧 Email: support@khatagpt.com
+- 💻 [GitHub Issues](https://github.com/yourusername/KhataGPT/issues)
+- 📱 [Discord Community](https://discord.gg/khatagpt)
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/NewFeature`)
-3. Commit changes (`git commit -m 'Add NewFeature'`)
-4. Push to branch (`git push origin feature/NewFeature`)
-5. Create Pull Request
+---
 
-## Error Handling
+<div align="center">
 
-The application includes comprehensive error handling:
-- Image validation and optimization
-- API error responses with detailed messages
-- Frontend error boundaries
-- Network error handling
-- Input validation
+Made with ❤️ by the KhataGPT Team
 
-## Security Features
+[![Stars](https://img.shields.io/github/stars/yourusername/KhataGPT?style=social)](https://github.com/yourusername/KhataGPT)
+[![Follow](https://img.shields.io/twitter/follow/KhataGPT?style=social)](https://twitter.com/KhataGPT)
 
-- Input sanitization
-- Image validation
-- Markdown sanitization
-- API rate limiting
-- Error message sanitization
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For support, please open an issue in the GitHub repository or contact the development team.
+</div>
 
