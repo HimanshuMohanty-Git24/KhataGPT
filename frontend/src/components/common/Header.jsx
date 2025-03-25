@@ -79,68 +79,61 @@ const Header = () => {
   // Mobile drawer content
   const drawer = (
     <Box sx={{ width: 280, height: '100%', pt: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', px: 2, pb: 2 }}>
-        <Box sx={{ flexGrow: 1 }}>
-          <RouterLink to="/" style={{ textDecoration: 'none' }}>
-            <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>
-              KhathaGPT
-            </Typography>
-          </RouterLink>
-        </Box>
-        <IconButton onClick={handleDrawerToggle} aria-label="close drawer">
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, mb: 2 }}>
+        <Typography variant="h6" color="primary" component="div" sx={{ fontWeight: 600 }}>
+          KhathaGPT
+        </Typography>
+        <IconButton color="inherit" onClick={handleDrawerToggle} edge="end">
           <CloseIcon />
         </IconButton>
       </Box>
-      <Divider />
+      
+      <Divider sx={{ mb: 2 }} />
+      
       <List>
         {navItems.map((item) => (
           <ListItem 
             button 
-            key={item.text} 
-            component={RouterLink} 
+            key={item.text}
+            component={RouterLink}
             to={item.path}
-            onClick={handleDrawerToggle}
             selected={isPathActive(item.path)}
+            onClick={handleDrawerToggle}
             sx={{
-              mx: 1,
               borderRadius: 1,
+              mx: 1,
               mb: 0.5,
               backgroundColor: isPathActive(item.path) 
                 ? alpha(theme.palette.primary.main, 0.1) 
                 : 'transparent',
-              '&.Mui-selected': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-              },
               '&:hover': {
                 backgroundColor: alpha(theme.palette.primary.main, 0.05),
+              },
+              '&.Mui-selected': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.1),
               }
             }}
           >
-            <ListItemIcon 
-              sx={{ 
-                color: isPathActive(item.path) 
-                  ? theme.palette.primary.main 
-                  : theme.palette.text.secondary 
-              }}
-            >
+            <ListItemIcon sx={{ 
+              color: isPathActive(item.path) ? theme.palette.primary.main : 'inherit',
+              minWidth: 40
+            }}>
               {item.icon}
             </ListItemIcon>
             <ListItemText 
               primary={item.text} 
-              primaryTypographyProps={{ 
+              primaryTypographyProps={{
                 fontWeight: isPathActive(item.path) ? 600 : 400,
-                color: isPathActive(item.path) 
-                  ? theme.palette.primary.main 
-                  : theme.palette.text.primary
-              }} 
+              }}
             />
           </ListItem>
         ))}
       </List>
-      <Box sx={{ position: 'absolute', bottom: 20, width: '100%', px: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="body2" color="textSecondary">
-            Dark Mode
+      
+      <Box sx={{ p: 2, mt: 'auto' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="body2" color="text.secondary">
+            Theme
           </Typography>
           <ThemeToggle />
         </Box>
@@ -152,48 +145,48 @@ const Header = () => {
     <>
       <HideOnScroll>
         <AppBar 
-          position="fixed" 
-          color="inherit" 
-          elevation={isScrolled ? 2 : 0}
+          position="fixed"
+          color="default" 
+          elevation={isScrolled ? 4 : 0}
           sx={{
-            bgcolor: theme.palette.mode === 'dark' 
-              ? alpha(theme.palette.background.paper, isScrolled ? 0.9 : 0.8)
-              : alpha(theme.palette.background.paper, isScrolled ? 0.9 : 0.8),
+            backgroundColor: isScrolled 
+              ? theme.palette.mode === 'dark' 
+                ? alpha(theme.palette.background.paper, 0.9) 
+                : alpha(theme.palette.background.paper, 0.9)
+              : theme.palette.mode === 'dark'
+                ? alpha(theme.palette.background.default, 0.9)
+                : 'transparent',
             backdropFilter: 'blur(8px)',
-            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            transition: 'background-color 0.3s, box-shadow 0.3s',
           }}
         >
           <Container maxWidth="lg">
-            <Toolbar disableGutters sx={{ py: 0.5 }}>
-              {/* Logo */}
-              <RouterLink to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-                <Box
-                  component="img"
-                  src="/assets/images/logo.svg"
-                  alt="KhathaGPT Logo"
-                  sx={{ height: 35, mr: 1 }}
-                />
-                <Typography 
-                  variant="h6" 
-                  color="primary" 
-                  sx={{ fontWeight: 700, display: { xs: 'none', sm: 'block' } }}
-                >
-                  KhathaGPT
-                </Typography>
-              </RouterLink>
+            <Toolbar disableGutters>
+              {/* Logo / Brand */}
+              <Typography
+                variant="h6"
+                component={RouterLink}
+                to="/"
+                sx={{
+                  fontWeight: 700,
+                  color: theme.palette.primary.main,
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                KhathaGPT
+              </Typography>
 
-              {/* Desktop navigation */}
-              <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, ml: 4 }}>
+              {/* Desktop Navigation */}
+              <Box sx={{ display: { xs: 'none', md: 'flex' }, ml: 4, flexGrow: 1 }}>
                 {navItems.map((item) => (
                   <Button
                     key={item.text}
                     component={RouterLink}
                     to={item.path}
-                    sx={{
-                      mx: 1,
-                      color: isPathActive(item.path) 
-                        ? theme.palette.primary.main 
-                        : theme.palette.text.primary,
+                    color="inherit"
+                    sx={{ 
+                      mx: 1, 
                       fontWeight: isPathActive(item.path) ? 600 : 400,
                       '&:hover': {
                         backgroundColor: alpha(theme.palette.primary.main, 0.05),
@@ -207,17 +200,23 @@ const Header = () => {
               </Box>
 
               {/* Action buttons and theme toggle */}
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box sx={{ ml: { xs: 1, md: 2 } }}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                ml: 'auto' // This ensures the items are pushed to the right
+              }}>
+                <Box sx={{ mr: { xs: 2, md: 0 } }}>
                   <ThemeToggle />
                 </Box>
                 
-                {/* Mobile menu button */}
+                {/* Mobile menu button - positioned at the end */}
                 <IconButton
                   aria-label="open menu"
                   onClick={handleDrawerToggle}
                   edge="end"
-                  sx={{ ml: 1, display: { md: 'none' } }}
+                  sx={{ 
+                    display: { md: 'none' },
+                  }}
                 >
                   <MenuIcon />
                 </IconButton>
