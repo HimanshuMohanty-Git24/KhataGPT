@@ -1,17 +1,47 @@
 import api from './api';
 
-/**
- * Service for document-related API operations
- */
-const documentService = {
+const transformDocument = (doc) => {
+  if (!doc) return null;
+  
+  // Map the doc_type to status - all valid document types should be considered "processed"
+  let status = "unknown";
+  if (doc.doc_type && doc.doc_type !== "unknown") {
+    status = "processed";
+  }
+  
+  return {
+    id: doc._id || doc.id,
+    filename: doc.title || doc.filename || 'Unnamed document',
+    status: status,
+    doc_type: doc.doc_type || "unknown",
+    uploaded_at: doc.created_at || doc.uploaded_at,
+    file_size: doc.file_size || doc.size,
+    extracted_text: doc.extracted_text || '',
+    image_base64: doc.image_base64 || ''
+  };
+};
+
+export const documentService = {
   /**
    * Get all documents
-   * @returns {Promise} - Promise resolving to array of documents
+   * @returns {Promise} - Promise resolving to documents array
    */
   getAllDocuments: async () => {
     try {
+      console.log('Fetching documents from:', `${api.defaults.baseURL}/documents/`);
+      
       const response = await api.get('/documents/');
-      return response.data;
+      console.log('Documents API raw response:', response);
+      
+      // Transform each document
+      if (Array.isArray(response.data)) {
+        return response.data.map(transformDocument);
+      } else if (response.data && Array.isArray(response.data.documents)) {
+        return response.data.documents.map(transformDocument);
+      } else {
+        console.warn('Unexpected data format for documents:', response.data);
+        return [];
+      }
     } catch (error) {
       console.error('Error fetching documents:', error);
       throw error;
@@ -24,11 +54,46 @@ const documentService = {
    * @returns {Promise} - Promise resolving to document data
    */
   getDocumentById: async (id) => {
+    if (!id || id === 'undefined') {
+      throw new Error('Invalid document ID');
+    }
+    
     try {
       const response = await api.get(`/documents/${id}/`);
-      return response.data;
+      console.log('Full document data:', response.data);
+      return transformDocument(response.data);
     } catch (error) {
       console.error(`Error fetching document ${id}:`, error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Get document extracted text (markdown)
+   * Directly from the document data
+   */
+  getDocumentContent: async (id) => {
+    if (!id || id === 'undefined') {
+      throw new Error('Invalid document ID');
+    }
+    
+    try {
+      const response = await api.get(`/documents/${id}/`);
+      console.log('Checking document for content:', response.data);
+      
+      // Check all potential field names where content might be stored
+      const content = 
+        response.data.extracted_text || 
+        response.data.content || 
+        response.data.parsed_content || 
+        '';
+      
+      console.log('Extracted content length:', content?.length || 0);
+      console.log('Content preview:', content?.substring(0, 100));
+      
+      return content;
+    } catch (error) {
+      console.error(`Error fetching document content for ${id}:`, error);
       throw error;
     }
   },
@@ -41,7 +106,7 @@ const documentService = {
    */
   uploadDocuments: async (formData, onUploadProgress) => {
     try {
-      const response = await api.post('/documents/upload', formData, {
+      const response = await api.post('/documents/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -78,63 +143,33 @@ const documentService = {
   },
   
   /**
-   * Get document analysis
+   * Get document image
    * @param {string} id - Document ID
-   * @returns {Promise} - Promise resolving to document analysis data
+   * @returns {Promise} - Promise resolving to document image
    */
-  getDocumentAnalysis: async (id) => {
-    try {
-      const response = await api.get(`/documents/${id}/analysis/`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching document analysis for ${id}:`, error);
-      throw error;
+  getDocumentImage: async (id) => {
+    if (!id || id === 'undefined') {
+      throw new Error('Invalid document ID');
     }
-  },
-  
-  /**
-   * Update document metadata
-   * @param {string} id - Document ID
-   * @param {Object} metadata - Updated metadata
-   * @returns {Promise} - Promise resolving to updated document
-   */
-  updateDocumentMetadata: async (id, metadata) => {
+    
     try {
-      const response = await api.patch(`/documents/${id}/`, metadata);
-      return response.data;
+      // First try to get the image directly from the document data
+      const docResponse = await api.get(`/documents/${id}/`);
+      if (docResponse.data && docResponse.data.image_base64) {
+        return docResponse.data.image_base64;
+      }
+      
+      // If not available, try a dedicated endpoint
+      try {
+        const response = await api.get(`/documents/${id}/file/`);
+        return response.data.image || '';
+      } catch (imageError) {
+        console.error(`Error fetching document image for ${id}:`, imageError);
+        return '';
+      }
     } catch (error) {
-      console.error(`Error updating document ${id}:`, error);
+      console.error(`Error fetching document for ${id}:`, error);
       throw error;
-    }
-  },
-  
-  /**
-   * Check document processing status
-   * @param {string} id - Document ID
-   * @returns {Promise} - Promise resolving to document status
-   */
-  checkDocumentStatus: async (id) => {
-    try {
-      const response = await api.get(`/documents/${id}/status/`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error checking status for document ${id}:`, error);
-      throw error;
-    }
-  },
-  
-  /**
-   * Get document categories
-   * @returns {Promise} - Promise resolving to array of document categories
-   */
-  getDocumentCategories: async () => {
-    try {
-      const response = await api.get('/documents/categories/');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching document categories:', error);
-      // Return empty array instead of throwing
-      return [];
     }
   }
 };

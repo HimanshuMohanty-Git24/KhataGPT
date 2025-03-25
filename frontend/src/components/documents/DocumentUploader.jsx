@@ -17,6 +17,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import { motion } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
+import { documentService } from '../../services/documentService'
 
 const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
   const theme = useTheme();
@@ -61,7 +62,7 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
     setUploadProgress(0);
     setError(null);
     setSuccess(false);
-
+    
     // Using axios for upload with progress tracking
     cancelTokenRef.current = axios.CancelToken.source();
     
@@ -71,15 +72,9 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
         formData.append('file', file); // Changed from 'files' to 'file' to match backend
       });
 
-      await axios.post('/api/documents/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        cancelToken: cancelTokenRef.current.token,
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
-        },
+      // Replace direct axios call with documentService
+      await documentService.uploadDocuments(formData, (percentCompleted) => {
+        setUploadProgress(percentCompleted);
       });
 
       setSuccess(true);

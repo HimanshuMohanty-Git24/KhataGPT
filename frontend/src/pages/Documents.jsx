@@ -9,17 +9,19 @@ import {
   useTheme, 
   Paper, 
   Button, 
-  useMediaQuery 
+  useMediaQuery,
+  CircularProgress
 } from '@mui/material';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import axios from 'axios';
 import DocumentUploader from '../components/documents/DocumentUploader';
 import DocumentGrid from '../components/documents/DocumentGrid';
 import Header from '../components/common/Header';
-import Footer from '../components/common/Footer';
+// Remove this import: import Footer from '../components/common/Footer';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { documentService } from '../services/documentService';
 
 const Documents = () => {
   const theme = useTheme();
@@ -33,6 +35,7 @@ const Documents = () => {
   const [sortDirection, setSortDirection] = useState('desc');
   const [filterStatus, setFilterStatus] = useState('all');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch documents on component mount and when refresh is triggered
   useEffect(() => {
@@ -44,17 +47,21 @@ const Documents = () => {
     setError(null);
     
     try {
-      const response = await axios.get('http://localhost:8000/documents/');
-      setDocuments(response.data);
+      const documents = await documentService.getAllDocuments();
+      console.log('Fetched documents:', documents);
+      setDocuments(Array.isArray(documents) ? documents : []);
     } catch (err) {
       console.error('Failed to fetch documents:', err);
       setError('Failed to load documents. Please try refreshing the page.');
+      setDocuments([]);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   const refreshDocuments = () => {
+    setIsRefreshing(true);
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -62,10 +69,11 @@ const Documents = () => {
     setTabValue(newValue);
   };
 
-  const handleDeleteDocument = async (documentId) => {
+  const handleDeleteDocument = async (id) => {
     try {
-      await axios.delete(`http://localhost:8000/documents/${documentId}/`);
-      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      await documentService.deleteDocument(id);
+      // Remove the deleted document from state
+      setDocuments(prevDocs => prevDocs.filter(doc => doc.id !== id));
     } catch (err) {
       console.error('Failed to delete document:', err);
       setError('Failed to delete document. Please try again.');
@@ -74,8 +82,6 @@ const Documents = () => {
 
   const handleSearchSubmit = (query) => {
     setSearchQuery(query);
-    // In a real implementation, you might want to trigger a backend search
-    // For now, we'll just filter the documents client-side
   };
 
   const handleSortChange = (value) => {
@@ -97,7 +103,7 @@ const Documents = () => {
     .filter(doc => {
       // Filter by search query
       const matchesSearch = searchQuery === '' || 
-        doc.filename.toLowerCase().includes(searchQuery.toLowerCase());
+        (doc.filename && doc.filename.toLowerCase().includes(searchQuery.toLowerCase()));
       
       // Filter by status
       const matchesStatus = filterStatus === 'all' || doc.status === filterStatus;
@@ -106,16 +112,16 @@ const Documents = () => {
     })
     .sort((a, b) => {
       // Sort by the selected column
-      const aValue = a[sortBy];
-      const bValue = b[sortBy];
+      const aValue = a[sortBy] || '';
+      const bValue = b[sortBy] || '';
       
       // Handle different data types
       if (typeof aValue === 'string') {
         const comparison = aValue.localeCompare(bValue);
         return sortDirection === 'asc' ? comparison : -comparison;
       } else if (sortBy === 'uploaded_at') {
-        const aDate = new Date(aValue);
-        const bDate = new Date(bValue);
+        const aDate = new Date(aValue || 0);
+        const bDate = new Date(bValue || 0);
         return sortDirection === 'asc' ? aDate - bDate : bDate - aDate;
       } else {
         return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
@@ -125,58 +131,60 @@ const Documents = () => {
   return (
     <>
       <Helmet>
-        <title>Your Documents | KhathaGPT</title>
-        <meta name="description" content="Manage your documents, upload new files, and chat with your content using KhathaGPT." />
+        <title>Documents | KathaGPT</title>
       </Helmet>
-
+      
       <Header />
       
       <Box
         component="main"
         sx={{
           minHeight: '100vh',
-          pt: 12,
+          pt: { xs: 10, sm: 12 },
           pb: 8,
           backgroundColor: theme.palette.background.default,
         }}
       >
-        <Container maxWidth="lg">
+        <Container maxWidth="xl">
           <Box sx={{ mb: 4 }}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+            <Typography 
+              variant="h4" 
+              component="h1" 
+              sx={{ mb: 1, fontWeight: 700 }}
             >
-              <Typography
-                variant="h3"
-                component="h1"
-                gutterBottom
-                sx={{ fontWeight: 700 }}
-              >
-                Documents
-              </Typography>
-              <Typography variant="h6" color="textSecondary" sx={{ mb: 3 }}>
-                Upload, manage, and chat with your documents
-              </Typography>
-            </motion.div>
+              Documents
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Upload, manage, and chat with your documents
+            </Typography>
+          </Box>
 
-            {error && (
-              <Alert 
-                severity="error" 
-                sx={{ mb: 3 }}
-                onClose={() => setError(null)}
-              >
-                {error}
-              </Alert>
-            )}
+          {error && (
+            <Alert 
+              severity="error" 
+              sx={{ mb: 4, borderRadius: 2 }}
+              action={
+                <Button 
+                  color="inherit" 
+                  size="small" 
+                  startIcon={<RefreshIcon />}
+                  onClick={refreshDocuments}
+                  disabled={isRefreshing}
+                >
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              }
+            >
+              {error}
+            </Alert>
+          )}
 
+          <Box sx={{ mb: 4 }}>
             <Paper 
-              elevation={0} 
+              elevation={2} 
               sx={{ 
                 borderRadius: 2, 
                 overflow: 'hidden',
-                border: `1px solid ${theme.palette.divider}`,
-                mb: 4
               }}
             >
               <Tabs 
@@ -184,9 +192,13 @@ const Documents = () => {
                 onChange={handleTabChange}
                 variant={isMobile ? "fullWidth" : "standard"}
                 sx={{ 
-                  borderBottom: `1px solid ${theme.palette.divider}`,
+                  borderBottom: 1, 
+                  borderColor: 'divider',
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? theme.palette.background.paper 
+                    : theme.palette.background.default,
                   '& .MuiTabs-indicator': {
-                    height: 3,
+                    height: '3px',
                     borderRadius: '3px 3px 0 0',
                   }
                 }}
@@ -212,19 +224,36 @@ const Documents = () => {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
                   >
-                    <DocumentGrid 
-                      documents={filteredAndSortedDocuments}
-                      loading={loading}
-                      onDelete={handleDeleteDocument}
-                      onSearch={handleSearchSubmit}
-                      searchQuery={searchQuery}
-                      setSearchQuery={setSearchQuery}
-                      onSortChange={handleSortChange}
-                      sortBy={sortBy}
-                      sortDirection={sortDirection}
-                      onFilterChange={handleFilterChange}
-                      filterStatus={filterStatus}
-                    />
+                    {loading && documents.length === 0 ? (
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'center', 
+                          alignItems: 'center',
+                          flexDirection: 'column',
+                          py: 8
+                        }}
+                      >
+                        <CircularProgress size={60} sx={{ mb: 4 }} />
+                        <Typography variant="h6" color="text.secondary">
+                          Loading documents...
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <DocumentGrid 
+                        documents={filteredAndSortedDocuments}
+                        loading={loading}
+                        onDelete={handleDeleteDocument}
+                        onSearch={handleSearchSubmit}
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        onSortChange={handleSortChange}
+                        sortBy={sortBy}
+                        sortDirection={sortDirection}
+                        onFilterChange={handleFilterChange}
+                        filterStatus={filterStatus}
+                      />
+                    )}
                   </motion.div>
                 )}
                 
@@ -247,6 +276,7 @@ const Documents = () => {
                         onClick={() => setTabValue(0)}
                         color="primary"
                         variant="outlined"
+                        startIcon={<AssessmentIcon />}
                       >
                         Back to Documents
                       </Button>
