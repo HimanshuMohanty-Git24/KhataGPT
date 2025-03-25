@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   Box, 
   Button, 
@@ -14,7 +14,10 @@ import {
   Tab,
   Dialog,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Card,
+  CardMedia,
+  Avatar
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
@@ -22,6 +25,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { motion } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
@@ -40,6 +44,15 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const canvasRef = useRef(null);
+
+  // Clean up object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      files.forEach(file => {
+        if (file.preview) URL.revokeObjectURL(file.preview);
+      });
+    };
+  }, [files]);
 
   const onDrop = useCallback((acceptedFiles) => {
     setError(null);
@@ -120,9 +133,18 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
   };
 
   const clearFiles = () => {
+    // Clean up preview URLs
+    files.forEach(file => {
+      if (file.preview) URL.revokeObjectURL(file.preview);
+    });
     setFiles([]);
     setError(null);
     setSuccess(false);
+  };
+  
+  const handleRemoveFile = (fileToRemove) => {
+    if (fileToRemove.preview) URL.revokeObjectURL(fileToRemove.preview);
+    setFiles(files.filter(file => file !== fileToRemove));
   };
 
   const handleOpenCamera = async () => {
@@ -311,34 +333,85 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
             Selected Files ({files.length})
           </Typography>
           
-          {files.map((file) => (
-            <Box
-              key={file.name}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                p: 1,
-                mb: 1,
-                borderRadius: 1,
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <InsertDriveFileIcon sx={{ mr: 1, color: 'primary.main' }} />
-              <Typography variant="body2" noWrap sx={{ flexGrow: 1 }}>
-                {file.name} ({(file.size / 1024).toFixed(1)} KB)
-              </Typography>
-              {file.uploaded ? (
-                <CheckCircleIcon color="success" sx={{ ml: 1 }} />
-              ) : file.error ? (
-                <ErrorIcon color="error" sx={{ ml: 1 }} />
-              ) : null}
-            </Box>
-          ))}
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+            gap: 2,
+            mt: 2
+          }}>
+            {files.map((file) => (
+              <Card 
+                key={file.name}
+                elevation={1}
+                sx={{
+                  position: 'relative',
+                  transition: 'transform 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: theme.shadows[4]
+                  }
+                }}
+              >
+                <Box sx={{ position: 'relative' }}>
+                  <CardMedia
+                    component="img"
+                    image={file.preview}
+                    alt={file.name}
+                    sx={{ 
+                      height: 140, 
+                      objectFit: 'cover',
+                      backgroundColor: 'action.hover' 
+                    }}
+                  />
+                  <Box sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    bgcolor: 'rgba(0, 0, 0, 0.5)',
+                    borderRadius: '50%'
+                  }}>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleRemoveFile(file)}
+                      sx={{ color: 'white' }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                  {file.uploaded && (
+                    <Avatar
+                      sx={{
+                        position: 'absolute',
+                        bottom: -12,
+                        right: 12,
+                        bgcolor: 'success.main',
+                        width: 24,
+                        height: 24
+                      }}
+                    >
+                      <CheckCircleIcon sx={{ fontSize: 16 }} />
+                    </Avatar>
+                  )}
+                </Box>
+                <Box sx={{ p: 1.5 }}>
+                  <Typography variant="subtitle2" noWrap title={file.name}>
+                    {file.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {(file.size / 1024).toFixed(1)} KB
+                  </Typography>
+                  {file.error && (
+                    <Typography variant="caption" color="error" display="block">
+                      {file.error}
+                    </Typography>
+                  )}
+                </Box>
+              </Card>
+            ))}
+          </Box>
 
           {uploading && (
-            <Box sx={{ width: '100%', mt: 2 }}>
+            <Box sx={{ width: '100%', mt: 3 }}>
               <LinearProgress 
                 variant="determinate" 
                 value={uploadProgress} 
@@ -350,7 +423,7 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
             </Box>
           )}
 
-          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
             <Button
               variant="contained"
               startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : <CloudUploadIcon />}

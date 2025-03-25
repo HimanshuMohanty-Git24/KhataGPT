@@ -406,7 +406,7 @@ const DocumentView = () => {
                     gap: 1,
                   }}
                 >
-                  <Chip
+                  {/* <Chip
                     label={document.status || "unknown"}
                     color={
                       document.status === "processed" ||
@@ -417,7 +417,7 @@ const DocumentView = () => {
                         : "default"
                     }
                     size='small'
-                  />
+                  /> */}
                   <Chip
                     icon={<DescriptionIcon fontSize='small' />}
                     label={document.doc_type || "document"}
