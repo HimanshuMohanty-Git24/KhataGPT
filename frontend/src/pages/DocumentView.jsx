@@ -55,6 +55,9 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
+// Import the markdown utilities
+import { enhanceMarkdown } from "../utils/markdownUtils";
+
 const DocumentView = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -86,7 +89,8 @@ const DocumentView = () => {
         // Check if the document has extracted_text directly
         if (doc.extracted_text && doc.extracted_text.trim()) {
           console.log("Using extracted_text directly from document object");
-          setMarkdownContent(doc.extracted_text);
+          // Use the enhanceMarkdown utility to ensure consistent formatting
+          setMarkdownContent(enhanceMarkdown(doc.extracted_text, doc));
         } else {
           // Try fetching content separately
           try {
@@ -97,8 +101,8 @@ const DocumentView = () => {
             );
 
             if (content && content.trim()) {
-              // If we got content, use it
-              setMarkdownContent(content);
+              // If we got content, use it with enhancement
+              setMarkdownContent(enhanceMarkdown(content, doc));
             } else {
               // Create a basic fallback for missing content
               createFallbackMarkdown(doc);
@@ -406,18 +410,6 @@ const DocumentView = () => {
                     gap: 1,
                   }}
                 >
-                  {/* <Chip
-                    label={document.status || "unknown"}
-                    color={
-                      document.status === "processed" ||
-                      (document.doc_type && document.doc_type !== "unknown")
-                        ? "success"
-                        : document.status === "processing"
-                        ? "warning"
-                        : "default"
-                    }
-                    size='small'
-                  /> */}
                   <Chip
                     icon={<DescriptionIcon fontSize='small' />}
                     label={document.doc_type || "document"}
@@ -584,39 +576,70 @@ const DocumentView = () => {
                           }}
                         >
                           <ReactMarkdown
-                            children={markdownContent}
                             remarkPlugins={[remarkGfm]}
                             rehypePlugins={[rehypeSanitize, rehypeRaw]}
                             components={{
-                              code({
-                                node,
-                                inline,
-                                className,
-                                children,
-                                ...props
-                              }) {
-                                const match = /language-(\w+)/.exec(
-                                  className || ""
-                                );
-                                return !inline && match ? (
-                                  <SyntaxHighlighter
-                                    children={String(children).replace(
-                                      /\n$/,
-                                      ""
-                                    )}
-                                    style={materialDark}
-                                    language={match[1]}
-                                    PreTag='div'
-                                    {...props}
-                                  />
+                              code({node, inline, className, children, ...props}) {
+                                const match = /language-(\w+)/.exec(className || '');
+                                const language = match ? match[1] : '';
+                                return !inline ? (
+                                  <Box sx={{ position: 'relative', mb: 2 }}>
+                                    <SyntaxHighlighter
+                                      style={theme.palette.mode === 'dark' ? materialDark : undefined}
+                                      language={language || 'text'}
+                                      PreTag="div"
+                                      {...props}
+                                      wrapLongLines
+                                    >
+                                      {String(children).replace(/\n$/, '')}
+                                    </SyntaxHighlighter>
+                                  </Box>
                                 ) : (
                                   <code className={className} {...props}>
                                     {children}
                                   </code>
                                 );
                               },
+                              // Enhanced table rendering
+                              table({node, ...props}) {
+                                return (
+                                  <Box sx={{ overflowX: 'auto', mb: 2 }}>
+                                    <table style={{ minWidth: '400px', width: '100%' }} {...props} />
+                                  </Box>
+                                );
+                              },
+                              // Better handling of images
+                              img({src, alt, ...props}) {
+                                return (
+                                  <img 
+                                    src={src} 
+                                    alt={alt || 'Document image'} 
+                                    style={{ maxWidth: '100%', height: 'auto' }}
+                                    {...props}
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = '/assets/images/image-placeholder.png';
+                                    }}
+                                  />
+                                );
+                              },
+                              // Better paragraph handling
+                              p({children, ...props}) {
+                                return (
+                                  <Typography 
+                                    component="p" 
+                                    variant="body1" 
+                                    sx={{ mb: 2, lineHeight: 1.7 }}
+                                    {...props}
+                                  >
+                                    {children}
+                                  </Typography>
+                                );
+                              }
                             }}
-                          />
+                          >
+                            {markdownContent}
+                          </ReactMarkdown>
                         </Box>
                       ) : (
                         <Box sx={{ textAlign: "center", py: 4 }}>
@@ -642,6 +665,10 @@ const DocumentView = () => {
                       <ChatInterface
                         documentId={document.id}
                         documentName={document.filename}
+                        documentContext={{
+                          title: document.filename,
+                          content: markdownContent
+                        }}
                       />
                     ) : (
                       <Box
@@ -780,7 +807,7 @@ const DocumentView = () => {
         </DialogActions>
       </Dialog>
 
-      {/* <Footer /> */}
+      <Footer />
     </>
   );
 };
