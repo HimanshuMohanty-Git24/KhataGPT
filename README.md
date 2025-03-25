@@ -136,10 +136,6 @@ REACT_APP_API_URL=http://localhost:8000
 | `/api/v1/chat` | POST | Send message |
 | `/api/v1/chat/{id}` | GET | Chat history |
 
-Full documentation:
-- 📘 [Swagger UI](http://localhost:8000/docs)
-- 📗 [ReDoc](http://localhost:8000/redoc)
-
 ## 🤝 Contributing
 
 1. Fork repository
@@ -162,9 +158,8 @@ MIT License • [View License](LICENSE)
 
 ## 💬 Support
 
-- 📧 Email: support@khatagpt.com
+- 📧 Email: codehimanshu24@gmail.com
 - 💻 [GitHub Issues](https://github.com/yourusername/KhataGPT/issues)
-- 📱 [Discord Community](https://discord.gg/khatagpt)
 
 ---
 
