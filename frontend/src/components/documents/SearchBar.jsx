@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   TextField, 
@@ -17,7 +17,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
 import SortIcon from '@mui/icons-material/Sort';
-import { debounce } from '../../utils/helpers';
+import { debounce } from 'lodash';
 
 const SearchBar = ({ 
   onSearch, 
@@ -34,29 +34,46 @@ const SearchBar = ({
   const [sortDirection, setSortDirection] = useState(initialSortDirection);
   const [filterStatus, setFilterStatus] = useState(initialFilterStatus);
   const [showFilters, setShowFilters] = useState(false);
+  const searchInputRef = useRef(null);
   
-  // Create debounced search function
-  const debouncedSearch = React.useCallback(
+  // Create debounced search function that won't trigger focus loss
+  const debouncedSearch = useRef(
     debounce((value) => {
       if (onSearch) {
         onSearch(value);
       }
-    }, 300),
-    [onSearch]
-  );
+    }, 300)
+  ).current;
   
   useEffect(() => {
-    debouncedSearch(searchTerm);
-  }, [searchTerm, debouncedSearch]);
+    // Only apply debouncing for actual changes to prevent unnecessary API calls
+    if (searchTerm !== initialSearchTerm) {
+      debouncedSearch(searchTerm);
+    }
+    // No need to call API when component mounts with empty search
+  }, [searchTerm, debouncedSearch, initialSearchTerm]);
   
   const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    // Allow live feedback for empty searches (clearing)
+    if (!value.trim()) {
+      onSearch('');
+    } else {
+      // For non-empty searches, use debounce to prevent too many API calls
+      debouncedSearch(value);
+    }
   };
   
   const handleClearSearch = () => {
     setSearchTerm('');
     if (onSearch) {
       onSearch('');
+    }
+    // Return focus to the search field after clearing
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
     }
   };
   
@@ -105,10 +122,11 @@ const SearchBar = ({
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <TextField
           fullWidth
-          placeholder="Search documents..."
+          placeholder="Search documents by title or content..."
           size="small"
           value={searchTerm}
           onChange={handleSearchChange}
+          inputRef={searchInputRef}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">

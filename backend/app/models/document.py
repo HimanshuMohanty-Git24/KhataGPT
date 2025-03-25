@@ -85,11 +85,20 @@ class Document:
     
     @staticmethod
     def get_all_documents():
-        """Get all documents with minimal info"""
-        return list(documents_collection.find(
-            {},
-            {"title": 1, "doc_type": 1, "created_at": 1, "last_chat_at": 1, "chat_count": 1}
-        ).sort("created_at", -1))
+        """Get all documents"""
+        try:
+            # Fetch documents and convert ObjectId to string
+            documents = list(documents_collection.find({}))
+            
+            # CRITICAL FIX: Convert ObjectId to string before returning
+            for doc in documents:
+                if '_id' in doc and isinstance(doc['_id'], ObjectId):
+                    doc['_id'] = str(doc['_id'])
+                    
+            return documents
+        except Exception as e:
+            print(f"Error getting documents: {e}")
+            return []
     
     @staticmethod
     def get_document(document_id: str) -> dict:
@@ -125,6 +134,8 @@ class Document:
     @staticmethod
     def search_documents(search_term: str):
         """Search documents by title and extracted text"""
+        print(f"Backend searching for: {search_term}")
+        
         # Check for existing text index
         existing_indexes = documents_collection.index_information()
         text_index_exists = False
@@ -133,20 +144,51 @@ class Document:
         for idx_name, idx_info in existing_indexes.items():
             if any('_fts' in key for key, _ in idx_info.get('key', [])):
                 text_index_exists = True
+                print(f"Found existing text index: {idx_name}")
                 break
         
         # Create a combined text index if none exists
         if not text_index_exists:
+            print("Creating text index on title and extracted_text fields")
             documents_collection.create_index(
-                [("title", TEXT), ("extracted_text", TEXT)],
+                [("title", "text"), ("extracted_text", "text")],
                 name="title_text_extracted_text_text"
             )
         
-        # Search for documents
-        return list(documents_collection.find(
-            {"$text": {"$search": search_term}},
-            {"title": 1, "doc_type": 1, "created_at": 1, "last_chat_at": 1, "chat_count": 1, "score": {"$meta": "textScore"}}
-        ).sort([("score", {"$meta": "textScore"})]))
+        try:
+            # First try MongoDB text search
+            results = list(documents_collection.find(
+                {"$text": {"$search": search_term}},
+                {"score": {"$meta": "textScore"}}
+            ).sort([("score", {"$meta": "textScore"})]))
+            
+            print(f"MongoDB text search found {len(results)} documents")
+            
+            # If no results, fall back to regex search
+            if not results:
+                print(f"No text search results, trying regex for '{search_term}'")
+                regex_pattern = f".*{search_term}.*"
+                results = list(documents_collection.find({
+                    "$or": [
+                        {"title": {"$regex": regex_pattern, "$options": "i"}},
+                        {"extracted_text": {"$regex": regex_pattern, "$options": "i"}},
+                        {"filename": {"$regex": regex_pattern, "$options": "i"}},
+                        {"doc_type": {"$regex": regex_pattern, "$options": "i"}}
+                    ]
+                }))
+                print(f"Regex search found {len(results)} documents")
+            
+            # CRITICAL FIX: Convert ObjectId to string before returning
+            # This is the key fix for the error
+            for doc in results:
+                if '_id' in doc and isinstance(doc['_id'], ObjectId):
+                    doc['_id'] = str(doc['_id'])
+                    
+            return results
+        except Exception as e:
+            print(f"Error during document search: {e}")
+            # Return an empty list if there's an error
+            return []
     
     @staticmethod
     def increment_chat_count(document_id: str):

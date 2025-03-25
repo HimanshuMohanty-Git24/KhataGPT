@@ -14,6 +14,36 @@ from app.config import API_PREFIX
 # Create router
 router = APIRouter(tags=["Documents"])
 
+@router.get("/")
+async def get_documents(search: str = None):
+    """
+    Get all documents or search documents by title and content
+    """
+    try:
+        if search:
+            print(f"API search request received for: '{search}'")
+            documents = Document.search_documents(search)
+            print(f"Found {len(documents)} documents matching '{search}'")
+            
+            # Log sample document to debug content issues
+            if documents and len(documents) > 0:
+                sample = documents[0]
+                has_extracted_text = 'extracted_text' in sample and sample['extracted_text']
+                print(f"Sample doc has extracted_text: {has_extracted_text}")
+                if has_extracted_text:
+                    content_preview = sample['extracted_text'][:100] + "..." if len(sample['extracted_text']) > 100 else sample['extracted_text']
+                    print(f"Content preview: {content_preview}")
+        else:
+            documents = Document.get_all_documents()
+        
+        # Return documents with all fields
+        return documents
+    except Exception as e:
+        print(f"Error in get_documents: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/", response_model=DocumentResponse)
 async def create_document(file: UploadFile = File(None), document: DocumentCreate = None):
     """Create a new document"""
@@ -59,9 +89,14 @@ async def get_all_documents(
     """Get all documents or search by term"""
     if search:
         documents = Document.search_documents(search)
+        # Serialize before returning
+        serialized_documents = [serialize_mongo_doc(doc) for doc in documents]
+        return serialized_documents
     else:
         documents = Document.get_all_documents()
-    return documents
+        # Serialize before returning
+        serialized_documents = [serialize_mongo_doc(doc) for doc in documents]
+        return serialized_documents
 
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def get_document(document_id: str):

@@ -195,9 +195,9 @@ const DocumentView = () => {
         <Box
           component='main'
           sx={{
-            minHeight: "100vh",
-            pt: 12,
-            pb: 8,
+            minHeight: "calc(100vh - 64px)", // Subtract header height
+            pt: { xs: 3, sm: 4 }, // Reduced top padding
+            pb: 6,
             backgroundColor: theme.palette.background.default,
           }}
         >
@@ -518,14 +518,14 @@ const DocumentView = () => {
                 />
               </Tabs>
 
-              <Box sx={{ minHeight: "60vh", position: "relative" }}>
+              <Box sx={{ minHeight: "40vh", position: "relative" }}>
                 {/* Preview Tab - Markdown rendered document */}
                 {tabValue === 0 && (
                   <Box
                     role='tabpanel'
                     id='document-tabpanel-0'
                     aria-labelledby='document-tab-0'
-                    sx={{ p: 3 }}
+                    sx={{ p: 2 }} // Reduced padding
                   >
                     <Paper
                       elevation={0}
@@ -677,8 +677,8 @@ const DocumentView = () => {
                     id='document-tabpanel-2'
                     aria-labelledby='document-tab-2'
                     sx={{
-                      p: 3,
-                      minHeight: "500px",
+                      p: 2, // Reduced padding
+                      minHeight: "350px", // Reduced minimum height
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
@@ -699,34 +699,53 @@ const DocumentView = () => {
                         </Typography>
                       </Box>
                     ) : (
-                      <Box sx={{ position: 'relative', width: '100%', textAlign: 'center' }}>
-                        <Tooltip title="Click to enlarge">
-                          <Box sx={{ cursor: 'zoom-in', display: 'inline-block', position: 'relative' }}>
+                      <Box
+                        sx={{
+                          position: "relative",
+                          width: "100%",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Tooltip title='Click to enlarge'>
+                          <Box
+                            sx={{
+                              cursor: "zoom-in",
+                              display: "inline-block",
+                              position: "relative",
+                            }}
+                          >
                             <ImageDisplay
                               document={document}
                               onError={() => setImageError(true)}
                               enableZoom={true}
                             />
-                            <Box 
-                              sx={{ 
-                                position: 'absolute', 
-                                top: 10, 
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                top: 10,
                                 right: 10,
-                                bgcolor: alpha(theme.palette.background.paper, 0.7),
-                                borderRadius: '50%',
+                                bgcolor: alpha(
+                                  theme.palette.background.paper,
+                                  0.7
+                                ),
+                                borderRadius: "50%",
                                 p: 0.5,
                                 opacity: 0.8,
-                                transition: 'opacity 0.2s ease',
-                                '&:hover': {
-                                  opacity: 1
-                                }
+                                transition: "opacity 0.2s ease",
+                                "&:hover": {
+                                  opacity: 1,
+                                },
                               }}
                             >
-                              <ZoomInIcon fontSize="small" color="primary" />
+                              <ZoomInIcon fontSize='small' color='primary' />
                             </Box>
                           </Box>
                         </Tooltip>
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                        <Typography
+                          variant='caption'
+                          color='text.secondary'
+                          sx={{ mt: 2, display: "block" }}
+                        >
                           Click on the image to view in full screen
                         </Typography>
                       </Box>
@@ -768,31 +787,31 @@ const DocumentView = () => {
 
 const ImageDisplay = ({ document, onError, enableZoom = false }) => {
   const theme = useTheme();
-  const [imageSrc, setImageSrc] = useState('');
+  const [imageSrc, setImageSrc] = useState("");
   const [loading, setLoading] = useState(true);
   const [openZoom, setOpenZoom] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
-  
+
   useEffect(() => {
     const loadImage = async () => {
       try {
         setLoading(true);
-        
+
         // First check if document already has base64 image
         if (document.image_base64) {
-          const src = document.image_base64.startsWith('data:') 
-            ? document.image_base64 
+          const src = document.image_base64.startsWith("data:")
+            ? document.image_base64
             : `data:image/jpeg;base64,${document.image_base64}`;
           setImageSrc(src);
           setLoading(false);
           return;
         }
-        
+
         // If not, try to get it from the API
         const imageData = await documentService.getDocumentImage(document.id);
         if (imageData) {
-          const src = imageData.startsWith('data:') 
-            ? imageData 
+          const src = imageData.startsWith("data:")
+            ? imageData
             : `data:image/jpeg;base64,${imageData}`;
           setImageSrc(src);
         } else {
@@ -806,78 +825,80 @@ const ImageDisplay = ({ document, onError, enableZoom = false }) => {
         setLoading(false);
       }
     };
-    
+
     loadImage();
   }, [document, onError]);
-  
+
   const handleOpenZoom = () => {
     setOpenZoom(true);
     setZoomLevel(1); // Reset zoom when opening
   };
-  
+
   const handleCloseZoom = () => {
     setOpenZoom(false);
   };
-  
+
   const zoomIn = (e) => {
     e.stopPropagation();
-    setZoomLevel(prev => Math.min(prev + 0.2, 3));
+    setZoomLevel((prev) => Math.min(prev + 0.2, 3));
   };
-  
+
   const zoomOut = (e) => {
     e.stopPropagation();
-    setZoomLevel(prev => Math.max(prev - 0.2, 0.5));
+    setZoomLevel((prev) => Math.max(prev - 0.2, 0.5));
   };
-  
+
   const resetZoom = (e) => {
     e.stopPropagation();
     setZoomLevel(1);
   };
-  
+
   if (loading) {
     return <CircularProgress />;
   }
-  
+
   if (!imageSrc) {
     return (
-      <Box sx={{ textAlign: 'center', p: 4 }}>
-        <Typography variant="h6" gutterBottom color="error">
+      <Box sx={{ textAlign: "center", p: 4 }}>
+        <Typography variant='h6' gutterBottom color='error'>
           Unable to load document image
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant='body2' color='text.secondary'>
           The original document image could not be loaded.
         </Typography>
       </Box>
     );
   }
-  
+
   return (
     <>
-      <Box 
-        component="img"
+      <Box
+        component='img'
         src={imageSrc}
         alt={document.filename}
         onClick={enableZoom ? handleOpenZoom : undefined}
         onError={() => onError()}
         sx={{
-          maxWidth: '100%',
-          width: 'auto',
-          height: 'auto',
-          maxHeight: 'calc(100vh - 300px)',
-          minHeight: '300px',
-          objectFit: 'contain',
-          border: '1px solid',
-          borderColor: 'divider',
+          maxWidth: "100%",
+          width: "auto",
+          height: "auto",
+          maxHeight: "calc(100vh - 300px)",
+          minHeight: "300px",
+          objectFit: "contain",
+          border: "1px solid",
+          borderColor: "divider",
           borderRadius: 1,
           boxShadow: theme.shadows[2],
-          cursor: enableZoom ? 'pointer' : 'default',
-          transition: 'transform 0.2s ease',
-          '&:hover': enableZoom ? {
-            transform: 'scale(1.02)'
-          } : {}
+          cursor: enableZoom ? "pointer" : "default",
+          transition: "transform 0.2s ease",
+          "&:hover": enableZoom
+            ? {
+                transform: "scale(1.02)",
+              }
+            : {},
         }}
       />
-      
+
       {/* Full-screen image modal */}
       {enableZoom && (
         <Modal
@@ -887,90 +908,100 @@ const ImageDisplay = ({ document, onError, enableZoom = false }) => {
           BackdropComponent={Backdrop}
           BackdropProps={{
             timeout: 500,
-            sx: { backgroundColor: alpha(theme.palette.common.black, 0.9) }
+            sx: { backgroundColor: alpha(theme.palette.common.black, 0.9) },
           }}
         >
           <Fade in={openZoom}>
-            <Box sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '100%',
-              height: '100%',
-              outline: 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              overflow: 'hidden'
-            }}>
+            <Box
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "100%",
+                height: "100%",
+                outline: "none",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+              }}
+            >
               {/* Controls toolbar */}
-              <Box sx={{
-                position: 'absolute',
-                top: 16,
-                right: 16,
-                zIndex: 10,
-                display: 'flex',
-                gap: 1,
-                bgcolor: alpha(theme.palette.background.paper, 0.7),
-                backdropFilter: 'blur(5px)',
-                borderRadius: 2,
-                p: 0.5
-              }}>
-                <Tooltip title="Zoom out">
-                  <IconButton onClick={zoomOut} size="small" color="inherit">
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  zIndex: 10,
+                  display: "flex",
+                  gap: 1,
+                  bgcolor: alpha(theme.palette.background.paper, 0.7),
+                  backdropFilter: "blur(5px)",
+                  borderRadius: 2,
+                  p: 0.5,
+                }}
+              >
+                <Tooltip title='Zoom out'>
+                  <IconButton onClick={zoomOut} size='small' color='inherit'>
                     <ZoomOutIcon />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Reset zoom">
-                  <IconButton onClick={resetZoom} size="small" color="inherit">
+                <Tooltip title='Reset zoom'>
+                  <IconButton onClick={resetZoom} size='small' color='inherit'>
                     <FullscreenIcon />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Zoom in">
-                  <IconButton onClick={zoomIn} size="small" color="inherit">
+                <Tooltip title='Zoom in'>
+                  <IconButton onClick={zoomIn} size='small' color='inherit'>
                     <ZoomInIcon />
                   </IconButton>
                 </Tooltip>
                 <Box sx={{ width: 1, bgcolor: theme.palette.divider }} />
-                <Tooltip title="Close">
-                  <IconButton onClick={handleCloseZoom} size="small" color="inherit">
+                <Tooltip title='Close'>
+                  <IconButton
+                    onClick={handleCloseZoom}
+                    size='small'
+                    color='inherit'
+                  >
                     <CloseIcon />
                   </IconButton>
                 </Tooltip>
               </Box>
-              
+
               {/* Document name */}
-              <Box sx={{
-                position: 'absolute',
-                bottom: 16,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                bgcolor: alpha(theme.palette.background.paper, 0.7),
-                backdropFilter: 'blur(5px)',
-                borderRadius: 2,
-                px: 2,
-                py: 1
-              }}>
-                <Typography variant="body2" fontWeight="medium">
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: 16,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  bgcolor: alpha(theme.palette.background.paper, 0.7),
+                  backdropFilter: "blur(5px)",
+                  borderRadius: 2,
+                  px: 2,
+                  py: 1,
+                }}
+              >
+                <Typography variant='body2' fontWeight='medium'>
                   {document.filename}
                 </Typography>
               </Box>
-              
+
               {/* Enlarged image */}
               <Box
-                component="img"
+                component='img'
                 src={imageSrc}
                 alt={document.filename}
                 onClick={(e) => e.stopPropagation()}
                 sx={{
-                  maxWidth: '90%',
-                  maxHeight: '90%',
-                  objectFit: 'contain',
+                  maxWidth: "90%",
+                  maxHeight: "90%",
+                  objectFit: "contain",
                   transform: `scale(${zoomLevel})`,
-                  transition: 'transform 0.2s ease',
-                  cursor: 'default'
+                  transition: "transform 0.2s ease",
+                  cursor: "default",
                 }}
               />
             </Box>
