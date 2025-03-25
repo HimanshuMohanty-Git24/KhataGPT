@@ -8,16 +8,24 @@ import {
   LinearProgress,
   Alert,
   useTheme,
-  alpha
+  alpha,
+  IconButton,
+  Tabs,
+  Tab,
+  Dialog,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import CloseIcon from '@mui/icons-material/Close';
 import { motion } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
-import { documentService } from '../../services/documentService'
+import { documentService } from '../../services/documentService';
 
 const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
   const theme = useTheme();
@@ -27,6 +35,11 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const cancelTokenRef = useRef();
+  const [uploadMethod, setUploadMethod] = useState('upload');
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const onDrop = useCallback((acceptedFiles) => {
     setError(null);
@@ -112,6 +125,65 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
     setSuccess(false);
   };
 
+  const handleOpenCamera = async () => {
+    setCameraOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      streamRef.current = stream;
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      setError('Could not access your camera. Please check permissions.');
+      setCameraOpen(false);
+    }
+  };
+
+  const handleCloseCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraOpen(false);
+  };
+
+  const handleCapture = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const context = canvasRef.current.getContext('2d');
+    const { videoWidth, videoHeight } = videoRef.current;
+    
+    // Set canvas dimensions to match video
+    canvasRef.current.width = videoWidth;
+    canvasRef.current.height = videoHeight;
+    
+    // Draw the video frame to the canvas
+    context.drawImage(videoRef.current, 0, 0, videoWidth, videoHeight);
+    
+    // Convert canvas to file
+    canvasRef.current.toBlob((blob) => {
+      const capturedFile = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      
+      // Add to files list
+      setFiles(prevFiles => [
+        ...prevFiles,
+        Object.assign(capturedFile, {
+          preview: URL.createObjectURL(capturedFile),
+          progress: 0,
+          error: null,
+          uploaded: false
+        })
+      ]);
+      
+      // Close camera
+      handleCloseCamera();
+    }, 'image/jpeg');
+  };
+
   const dropzoneStyle = {
     border: '2px dashed',
     borderColor: isDragAccept 
@@ -132,44 +204,106 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-      <Typography variant="h6" component="h2" gutterBottom>
-        Upload Images
+    <Paper elevation={2} sx={{ p: 3, bgcolor: 'background.paper' }}>
+      <Typography variant="h6" gutterBottom>
+        Upload Documents
       </Typography>
-      <Typography variant="body2" color="textSecondary" paragraph>
-        Upload receipt, bill, menu, or other document images to analyze and chat with.
-      </Typography>
-      
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-      )}
-      
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Images uploaded successfully!
-        </Alert>
-      )}
-      
-      <Box {...getRootProps({ sx: dropzoneStyle })}>
-        <input {...getInputProps()} />
-        <Box sx={{ p: 3, textAlign: 'center' }}>
-          <motion.div
-            animate={{ y: isDragActive ? -10 : 0 }}
-            transition={{ type: 'spring', stiffness: 300 }}
+
+      <Tabs
+        value={uploadMethod}
+        onChange={(e, newValue) => setUploadMethod(newValue)}
+        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Tab value="upload" label="Upload Files" icon={<CloudUploadIcon />} iconPosition="start" />
+        <Tab value="camera" label="Take Photo" icon={<CameraAltIcon />} iconPosition="start" />
+      </Tabs>
+
+      {uploadMethod === 'upload' ? (
+        <Box {...getRootProps()} sx={dropzoneStyle}>
+          <input {...getInputProps()} />
+          <Box sx={{ py: 4 }}>
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <CloudUploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+            </motion.div>
+            
+            <Typography variant="body1" gutterBottom>
+              {isDragActive
+                ? 'Drop the files here...'
+                : 'Drag & drop image files here, or click to select files'}
+            </Typography>
+            <Typography variant="caption" display="block" color="textSecondary">
+              Supports JPG, PNG, GIF, WEBP, HEIC, TIFF (Max: 15MB)
+            </Typography>
+          </Box>
+        </Box>
+      ) : (
+        <Box 
+          sx={{ 
+            p: 3, 
+            border: '2px dashed',
+            borderColor: theme.palette.divider,
+            borderRadius: theme.shape.borderRadius,
+            textAlign: 'center',
+            backgroundColor: alpha(theme.palette.background.paper, 0.8),
+          }}
+        >
+          <Button
+            variant="contained"
+            startIcon={<CameraAltIcon />}
+            onClick={handleOpenCamera}
+            size="large"
+            sx={{ py: 1.5 }}
           >
-            <CloudUploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-          </motion.div>
-          
-          <Typography variant="body1" gutterBottom>
-            {isDragActive
-              ? 'Drop the files here...'
-              : 'Drag & drop image files here, or click to select files'}
-          </Typography>
-          <Typography variant="caption" display="block" color="textSecondary">
-            Supports JPG, PNG, GIF, WEBP, HEIC, TIFF (Max: 15MB)
+            Open Camera
+          </Button>
+          <Typography variant="caption" display="block" sx={{ mt: 2 }} color="textSecondary">
+            Take a photo directly with your device's camera
           </Typography>
         </Box>
-      </Box>
+      )}
+      
+      {/* Camera Capture Dialog */}
+      <Dialog 
+        open={cameraOpen} 
+        onClose={handleCloseCamera}
+        maxWidth="md"
+        fullWidth
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
+          <IconButton onClick={handleCloseCamera}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <DialogContent sx={{ p: 0, position: 'relative', overflow: 'hidden', textAlign: 'center' }}>
+          <video 
+            ref={videoRef}
+            autoPlay 
+            playsInline
+            style={{ 
+              width: '100%', 
+              maxHeight: '70vh', 
+              backgroundColor: '#000' 
+            }}
+          />
+          {/* Hidden canvas for capturing */}
+          <canvas ref={canvasRef} style={{ display: 'none' }} />
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', p: 2 }}>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleCapture}
+            startIcon={<CameraAltIcon />}
+            sx={{ borderRadius: '50px', px: 3 }}
+          >
+            Capture Photo
+          </Button>
+        </DialogActions>
+      </Dialog>
       
       {files.length > 0 && (
         <Box sx={{ mt: 3 }}>
@@ -224,7 +358,7 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
               disabled={uploading}
               fullWidth
             >
-              {uploading ? 'Uploading...' : 'Upload Images'}
+              {uploading ? 'Uploading...' : 'Upload Files'}
             </Button>
 
             {uploading ? (
@@ -245,6 +379,18 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
             )}
           </Box>
         </Box>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert severity="success" sx={{ mt: 2 }}>
+          Files uploaded successfully!
+        </Alert>
       )}
     </Paper>
   );
