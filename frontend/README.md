@@ -1,261 +1,249 @@
-# KhataGPT Frontend
+<div align="center">
 
-React-based frontend for the KhataGPT document analysis system. This application provides an intuitive interface for uploading, analyzing and chatting with documents using Google's Gemini AI.
+# KhathaGPT Frontend
 
-## Technology Stack
+[![React](https://img.shields.io/badge/React-19.0.0-61DAFB?logo=react)](https://reactjs.org/)
+[![Material-UI](https://img.shields.io/badge/MUI-6.4.8-0081CB?logo=mui)](https://mui.com/)
+[![Code Style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-- **React 19.0.0**: Modern UI library 
-- **Material-UI 6.4.8**: Component framework
-- **React Router 7.4.0**: Client-side routing
-- **Axios 1.8.4**: HTTP client
-- **React Markdown 10.1.0**: Markdown rendering
-- **Remark/Rehype**: Markdown plugins
-- **Web Vitals**: Performance monitoring
+🚀 Modern React-based frontend for enterprise document analysis powered by Gemini AI
 
-## Project Structure
+[Getting Started](#getting-started) • 
+[Contributing](#contributing) •
+[Support](#support)
 
-```
-frontend/
-├── public/                # Static files
-│   ├── index.html        # HTML template
-│   └── manifest.json     # PWA manifest
-├── src/
-│   ├── components/       # Reusable components
-│   │   ├── chat/        # Chat related components
-│   │   ├── common/      # Shared components
-│   │   └── documents/   # Document components
-│   ├── pages/           # Route pages
-│   ├── services/        # API services
-│   └── styles/          # Global styles
-└── package.json         # Dependencies
-```
+</div>
 
-## Features
+---
 
-### Document Management
-- Upload multiple document types (receipts, menus, forms)
-- Automatic document classification
-- Smart title generation
-- Full-text search
-- Grid/List view options
-- Real-time document processing status
-- Delete with confirmation
+## 🌟 Features
 
-### Chat Interface
+<table>
+<tr>
+<td>
+
+### 📄 Document Intelligence
+- Smart document classification & analysis
+- Multi-format support (PDF, Word, Excel)
+- Full-text semantic search
+- Real-time processing status
+- Version history tracking
+- Batch upload capabilities
+
+</td>
+<td>
+
+### 💬 AI Interactions
 - Context-aware document chat
 - Real-time AI responses
-- Markdown formatting
-- Code syntax highlighting
-- Table formatting
-- Web search integration
-- Chat history tracking
-- Message timestamps
+- Semantic search
+- Citation support
+- Custom prompts
+- Chat history management
 
-### UI Features
-- Responsive design
-- Dark/Light theme
-- Loading states
-- Error handling
-- Toast notifications
-- Drag & drop uploads
-- Mobile-optimized views
-- Keyboard shortcuts
+</td>
+</tr>
+<tr>
+<td>
 
-## Setup & Installation
+### 🎨 Modern UI/UX
+- Responsive Material Design
+- Dark/Light themes
+- Drag & drop interface
+- Progressive loading
+- Motion feedback
+- Mobile-first approach
 
-1. Clone repository:
+</td>
+<td>
+
+### 🔧 Technical Features
+- Type-safe components
+- Modular architecture
+- Performance optimized
+- PWA ready
+- SSR support
+- Comprehensive testing
+
+</td>
+</tr>
+</table>
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 16.x+
+- npm/yarn
+- Git
+
+### Quick Setup
+
 ```bash
-git clone https://github.com/yourusername/KhataGPT-frontend.git
-cd KhataGPT-frontend
-```
+# Clone repository
+git clone https://github.com/yourusername/KhataGPT.git
 
-2. Install dependencies:
-```bash
+# Navigate to frontend
+cd KhataGPT/frontend
+
+# Install dependencies
 npm install
-```
 
-3. Configure environment:
-Create `.env` file:
-```env
-REACT_APP_API_URL=http://localhost:8000
-```
-
-4. Start development server:
-```bash
+# Start development server
 npm start
 ```
 
-## Available Scripts
+### Environment Setup
 
-- `npm start`: Run development server
-- `npm build`: Create production build
-- `npm test`: Run test suite
-- `npm eject`: Eject from Create React App
-- `npm lint`: Run ESLint
-- `npm format`: Format code with Prettier
-
-## API Integration
-
-### Document Endpoints
-- `POST /documents`: Upload document
-- `GET /documents`: List documents
-- `GET /documents/{id}`: Get document
-- `DELETE /documents/{id}`: Delete document
-
-### Chat Endpoints
-- `POST /chat`: Send message
-- `GET /chat/{documentId}`: Get chat history
-- `DELETE /chat/{documentId}`: Clear chat
-
-## Component Overview
-
-### ChatInterface
-```jsx
-<ChatInterface
-  documentId="string"
-  documentTitle="string"
-/>
+```env
+REACT_APP_API_URL=http://localhost:8000
+REACT_APP_ENV=development
 ```
 
-### DocumentList
-```jsx
-<DocumentList
-  documents={documents}
-  onDeleteDocument={handleDelete}
-/>
+## 📚 Documentation
+
+### Project Structure
+```
+frontend/
+├── public/                # Static assets
+├── src/
+│   ├── components/       # Reusable UI components
+│   │   ├── common/      # Shared components
+│   │   ├── documents/   # Document-related components
+│   │   └── chat/       # Chat interface components
+│   ├── hooks/           # Custom React hooks
+│   ├── layouts/         # Page layouts
+│   ├── pages/           # Route components
+│   ├── services/        # API services
+│   ├── store/           # State management
+│   ├── styles/          # Global styles
+│   ├── types/           # TypeScript definitions
+│   └── utils/           # Helper functions
+└── tests/               # Test suites
 ```
 
-### DocumentUploader
-```jsx
-<DocumentUploader
-  onUploadComplete={handleUpload}
-/>
+### Core Technologies
+
+| Category | Technologies |
+|----------|-------------|
+| Core | React 19, TypeScript |
+| UI | Material-UI 6, Framer Motion |
+| State | Context API, React Query |
+| Testing | Jest, React Testing Library |
+| Build | Webpack 5, Babel 7 |
+| CI/CD | GitHub Actions |
+
+### Key Commands
+
+```bash
+# Development
+npm start          # Start dev server
+npm test          # Run tests
+npm run lint      # Lint code
+npm run format    # Format code
+
+# Production
+npm run build     # Build for production
+npm run analyze   # Bundle analysis
 ```
 
-## State Management
-
-- React hooks for local state
-- Context for theme/auth
-- URL params for document/chat state
-- Local storage for preferences
-
-## Error Handling
-
-- API error interceptors
-- User-friendly error messages
-- Retry mechanisms
-- Offline detection
-- File validation
-- Input sanitization
-
-## Performance Optimizations
-
-- Image compression
-- Lazy loading
-- Code splitting
-- Debounced search
-- Memoized components
-- Virtual scrolling for long lists
-
-## Security Features
-
-- Input validation
-- File type checking
-- Size limits
-- Markdown sanitization
-- Error message sanitization
-- Secure HTTP headers
-
-## Browser Support
-
-- Chrome/Edge (latest 2)
-- Firefox (latest 2)
-- Safari (latest 2)
-- Mobile browsers
-
-## Development Guidelines
+## 🛠️ Development
 
 ### Code Style
-- Functional components
-- TypeScript
-- ESLint + Prettier
-- SOLID principles
-- React best practices
 
-### Git Workflow
-1. Create feature branch
-2. Implement changes
-3. Run tests
-4. Create pull request
-5. Code review
-6. Merge to main
+We follow strict coding standards:
+- ESLint configuration
+- Prettier formatting
+- TypeScript strict mode
+- Component composition patterns
+- Custom hook patterns
 
-## Testing
+### Component Development
 
-### Unit Tests
-```bash
-npm test
+```jsx
+// Example component structure
+const MyComponent = ({ prop1, prop2 }: Props): JSX.Element => {
+  // Component logic
+  return (
+    <StyledWrapper>
+      {/* Component JSX */}
+    </StyledWrapper>
+  );
+};
 ```
 
-### Component Tests
-```bash
-npm test:components
-```
+### Testing Strategy
 
-### E2E Tests
-```bash
-npm test:e2e
-```
+- Unit tests for utilities
+- Integration tests for components
+- E2E tests for critical flows
+- Performance testing
+- Accessibility testing
 
-## Deployment
+## 🤝 Contributing
 
-1. Build production assets:
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'feat: add amazing feature'`)
+4. Push branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+### Commit Convention
+
+We use [Conventional Commits](https://www.conventionalcommits.org/):
+- `feat:` New features
+- `fix:` Bug fixes
+- `docs:` Documentation
+- `style:` Code style
+- `refactor:` Code refactoring
+- `test:` Testing
+- `chore:` Maintenance
+
+## 📦 Deployment
+
+### Build Process
+
 ```bash
+# Production build
 npm run build
+
+# Analyze bundle
+npm run analyze
 ```
 
-2. Deploy to hosting:
-```bash
-npm run deploy
-```
+## 🔒 Security
 
-## Contributing
+- Input sanitization
+- XSS prevention
+- CSRF protection
+- Content security policy
+- Regular dependency updates
+- Security headers
 
-1. Fork repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Create pull request
+## 🎯 Performance
 
-## Troubleshooting
+- Code splitting
+- Lazy loading
+- Image optimization
+- Bundle optimization
+- Caching strategies
+- Performance monitoring
 
-### Common Issues
-- API connection errors
-- File upload failures
-- Chat disconnections
-- Browser compatibility
+## 💪 Support
 
-### Solutions
-- Check API URL in .env
-- Verify file types/sizes
-- Clear browser cache
-- Update dependencies
+- [Issue Tracker](https://github.com/yourusername/KhataGPT/issues)
 
-## License
+## 📜 License
 
-MIT License - see LICENSE.md
+MIT License - see [LICENSE.md](LICENSE.md)
 
-## Support
+---
 
-- GitHub Issues
-- Documentation Wiki
-- Community Discord
+<div align="center">
 
-## Changelog
+Made with ❤️ by the KhathaGPT Team
+[GitHub](https://github.com/yourusername/KhataGPT) • 
 
-### v2.0.0
-- Gemini AI integration
-- New chat interface
-- Performance improvements
-- Enhanced document processing
+</div>
 
