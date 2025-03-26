@@ -73,15 +73,8 @@ KhataGPT is an intelligent document analysis platform that leverages Google's Ge
 
 ## 🏗️ Architecture
 
-```mermaid
-graph TB
-    A[Frontend] --> B[API Layer]
-    B --> C[Service Layer]
-    C --> D[(MongoDB)]
-    C --> E[Gemini AI]
-    C --> F[Image Processing]
-    C --> G[Search Engine]
-```
+    
+![diagram-export-3-26-2025-5_05_21-PM](https://github.com/user-attachments/assets/70224c50-187d-476a-9bca-08b8bf813190)
 
 ## 🚀 Getting Started
 
