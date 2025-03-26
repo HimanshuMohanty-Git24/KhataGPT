@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Frontend configuration
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
 # API configuration
 API_PREFIX = "/api/v1"
 DEBUG = os.getenv("DEBUG", "False").lower() in ["true", "1", "t"]
