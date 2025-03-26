@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from .config import settings
 from app.routes.documents import router as documents_router
 from app.routes.chat import router as chat_router
 from app.config import API_PREFIX, FRONTEND_URL
