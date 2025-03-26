@@ -4,7 +4,7 @@ import uvicorn
 from .config import settings
 from app.routes.documents import router as documents_router
 from app.routes.chat import router as chat_router
-from app.config import API_PREFIX
+from app.config import API_PREFIX, FRONTEND_URL
 
 # Create FastAPI app
 app = FastAPI(
@@ -15,7 +15,7 @@ app = FastAPI(
 
 # Configure CORS properly
 origins = [
-    settings.FRONTEND_URL,
+    FRONTEND_URL,
     "http://localhost:3000",  # React dev server
     "http://127.0.0.1:3000",
 ]
