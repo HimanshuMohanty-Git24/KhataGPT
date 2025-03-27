@@ -31,7 +31,7 @@ app.add_middleware(
 app.include_router(documents_router, prefix=f"{API_PREFIX}/documents")
 app.include_router(chat_router, prefix=f"{API_PREFIX}/chat")
 
-# Root endpoint
+# Root endpoint 
 @app.get("/")
 async def root():
     return {
