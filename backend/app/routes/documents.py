@@ -5,6 +5,7 @@ import base64
 from io import BytesIO
 from pathlib import Path
 import os
+from pydantic import BaseModel
 
 from app.models.document import Document, DocumentResponse, DocumentCreate, DocumentListResponse
 from app.services.document_processor import DocumentProcessor
@@ -13,6 +14,10 @@ from app.config import API_PREFIX
 
 # Create router
 router = APIRouter(tags=["Documents"])
+
+# Define content update model
+class ContentUpdateModel(BaseModel):
+    content: str
 
 @router.get("/")
 async def get_documents(search: str = None):
@@ -82,22 +87,6 @@ async def create_document(file: UploadFile = File(None), document: DocumentCreat
     else:
         raise HTTPException(status_code=400, detail="No document data provided")
 
-@router.get("/", response_model=List[DocumentListResponse])
-async def get_all_documents(
-    search: Optional[str] = Query(None, description="Search term for documents")
-):
-    """Get all documents or search by term"""
-    if search:
-        documents = Document.search_documents(search)
-        # Serialize before returning
-        serialized_documents = [serialize_mongo_doc(doc) for doc in documents]
-        return serialized_documents
-    else:
-        documents = Document.get_all_documents()
-        # Serialize before returning
-        serialized_documents = [serialize_mongo_doc(doc) for doc in documents]
-        return serialized_documents
-
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def get_document(document_id: str):
     """Get a document by ID"""
@@ -115,6 +104,57 @@ async def update_document(document_id: str, data: dict):
     
     updated_doc = Document.update_document(document_id, data)
     return updated_doc
+
+@router.put("/{document_id}/content", response_model=dict)
+async def update_document_content(document_id: str, content_update: ContentUpdateModel):
+    """Update only the content of a document"""
+    try:
+        document = Document.get_document(document_id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Update only the extracted_text field
+        update_data = {"extracted_text": content_update.content}
+        
+        # Call the Document model's update method
+        result = Document.update_document(document_id, update_data)
+        
+        if result:
+            return {"message": "Document content updated successfully", "success": True}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update document content")
+    except Exception as e:
+        print(f"Error updating document content: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error updating document content: {str(e)}")
+
+@router.put("/{document_id}/title", response_model=dict)
+async def update_document_title(document_id: str, title_update: dict):
+    """Update only the title of a document"""
+    try:
+        document = Document.get_document(document_id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        if "title" not in title_update:
+            raise HTTPException(status_code=400, detail="Title is required")
+        
+        # Update only the title field
+        update_data = {"title": title_update["title"]}
+        
+        # Call the Document model's update method
+        result = Document.update_document(document_id, update_data)
+        
+        if result:
+            return {"message": "Document title updated successfully", "success": True}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update document title")
+    except Exception as e:
+        print(f"Error updating document title: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error updating document title: {str(e)}")
 
 @router.delete("/{document_id}")
 async def delete_document(document_id: str):

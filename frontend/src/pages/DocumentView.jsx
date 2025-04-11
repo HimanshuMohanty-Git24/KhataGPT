@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Container,
@@ -27,6 +27,7 @@ import {
   Fade,
   Backdrop,
   Zoom,
+  TextField,
 } from "@mui/material";
 import { Helmet } from "react-helmet";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -44,6 +45,9 @@ import CloseIcon from "@mui/icons-material/Close";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
+import CancelIcon from "@mui/icons-material/Cancel";
 import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
 import ChatInterface from "../components/chat/ChatInterface";
@@ -70,6 +74,18 @@ const DocumentView = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
+
+  // New states for edit functionality
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedMarkdown, setEditedMarkdown] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Image viewer states
+  const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [imageSrc, setImageSrc] = useState("");
 
   // Fetch document details
   useEffect(() => {
@@ -138,6 +154,13 @@ const DocumentView = () => {
     fetchDocument();
   }, [id]);
 
+  // Update editedMarkdown when markdownContent changes and we're not in edit mode
+  useEffect(() => {
+    if (!isEditMode) {
+      setEditedMarkdown(markdownContent);
+    }
+  }, [markdownContent, isEditMode]);
+
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
@@ -150,9 +173,9 @@ const DocumentView = () => {
       navigate("/documents", {
         state: { message: "Document deleted successfully" },
       });
-    } catch (err) {
-      console.error("Failed to delete document:", err);
-      setError("Failed to delete document. Please try again.");
+    } catch (error) {
+      console.error("Failed to delete document:", error);
+      setError("Failed to delete document. Please try again later.");
     }
   };
 
@@ -164,34 +187,68 @@ const DocumentView = () => {
     setDeleteDialogOpen(false);
   };
 
-  // Function to get the document image URL
-  const getDocumentImage = async () => {
-    if (!document || !document.id) return null;
+  // Handle image zoom modal
+  const handleOpenZoom = (src) => {
+    setImageSrc(src);
+    setZoomLevel(1);
+    setZoomDialogOpen(true);
+  };
+
+  const handleCloseZoom = () => {
+    setZoomDialogOpen(false);
+  };
+
+  const zoomIn = () => {
+    setZoomLevel((prevZoom) => Math.min(prevZoom + 0.25, 3));
+  };
+
+  const zoomOut = () => {
+    setZoomLevel((prevZoom) => Math.max(prevZoom - 0.25, 0.5));
+  };
+
+  const resetZoom = () => {
+    setZoomLevel(1);
+  };
+
+  // New handlers for edit functionality
+  const handleEditClick = () => {
+    setIsEditMode(true);
+    setEditedMarkdown(markdownContent);
+    setSaveSuccess(false);
+  };
+
+  const handleSaveClick = async () => {
+    setSaveError(null);
+    setIsSaving(true);
 
     try {
-      // Check if we already have the image in the document
-      if (document.image_base64) {
-        return document.image_base64.startsWith("data:")
-          ? document.image_base64
-          : `data:image/jpeg;base64,${document.image_base64}`;
-      }
+      // Save the updated content to the database
+      await documentService.updateDocumentContent(id, editedMarkdown);
+      setMarkdownContent(editedMarkdown);
+      setIsEditMode(false);
+      setSaveSuccess(true);
 
-      // If not, try to fetch it
-      const imageData = await documentService.getDocumentImage(document.id);
-      if (imageData) {
-        return imageData.startsWith("data:")
-          ? imageData
-          : `data:image/jpeg;base64,${imageData}`;
-      }
-
-      return null;
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
     } catch (error) {
-      console.error("Error getting document image:", error);
-      return null;
+      console.error("Failed to save document content:", error);
+      setSaveError("Failed to save changes. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // Render loading skeleton
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setEditedMarkdown(markdownContent);
+  };
+
+  const handleMarkdownChange = (e) => {
+    setEditedMarkdown(e.target.value);
+  };
+
   if (loading) {
     return (
       <>
@@ -199,69 +256,21 @@ const DocumentView = () => {
         <Box
           component='main'
           sx={{
-            minHeight: "calc(100vh - 64px)", // Subtract header height
-            pt: { xs: 3, sm: 4 }, // Reduced top padding
-            pb: 6,
+            pt: { xs: 10, sm: 12 },
+            pb: 8,
+            minHeight: "100vh",
             backgroundColor: theme.palette.background.default,
           }}
         >
           <Container maxWidth='lg'>
-            <Box sx={{ mb: 4 }}>
-              <Skeleton variant='text' width={150} height={40} />
-              <Skeleton variant='text' width={250} height={30} />
-            </Box>
-
-            <Paper
-              elevation={2}
-              sx={{
-                p: 3,
-                borderRadius: 2,
-                mb: 4,
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                <Skeleton variant='circular' width={50} height={50} />
-                <Box sx={{ ml: 2, flexGrow: 1 }}>
-                  <Skeleton variant='text' width='60%' height={32} />
-                  <Skeleton variant='text' width='40%' height={24} />
-                </Box>
-                <Skeleton
-                  variant='rectangular'
-                  width={120}
-                  height={40}
-                  sx={{ borderRadius: 1 }}
-                />
-              </Box>
-
-              <Skeleton
-                variant='rectangular'
-                height={400}
-                sx={{ borderRadius: 1, mb: 3 }}
-              />
-
-              <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-                <Skeleton
-                  variant='rectangular'
-                  width={100}
-                  height={36}
-                  sx={{ borderRadius: 1 }}
-                />
-                <Skeleton
-                  variant='rectangular'
-                  width={100}
-                  height={36}
-                  sx={{ borderRadius: 1 }}
-                />
-              </Box>
-            </Paper>
+            <Skeleton variant='text' height={60} width='50%' sx={{ mb: 2 }} />
+            <Skeleton variant='rounded' height={500} sx={{ mb: 2 }} />
           </Container>
         </Box>
-        <Footer />
       </>
     );
   }
 
-  // Render error state
   if (error) {
     return (
       <>
@@ -269,36 +278,26 @@ const DocumentView = () => {
         <Box
           component='main'
           sx={{
-            minHeight: "100vh",
-            pt: 12,
+            pt: { xs: 10, sm: 12 },
             pb: 8,
+            minHeight: "100vh",
             backgroundColor: theme.palette.background.default,
           }}
         >
           <Container maxWidth='lg'>
-            <Alert
-              severity='error'
-              variant='filled'
-              sx={{ mb: 4, borderRadius: 2 }}
-            >
+            <Alert severity='error' sx={{ mb: 2 }}>
               {error}
             </Alert>
-
-            <Box sx={{ textAlign: "center", mt: 8 }}>
-              <Button
-                component={Link}
-                to='/documents'
-                startIcon={<ArrowBackIcon />}
-                variant='outlined'
-                color='primary'
-                size='large'
-              >
-                Back to Documents
-              </Button>
-            </Box>
+            <Button
+              component={Link}
+              to='/documents'
+              startIcon={<ArrowBackIcon />}
+              variant='contained'
+            >
+              Back to Documents
+            </Button>
           </Container>
         </Box>
-        <Footer />
       </>
     );
   }
@@ -310,36 +309,26 @@ const DocumentView = () => {
         <Box
           component='main'
           sx={{
-            minHeight: "100vh",
-            pt: 12,
+            pt: { xs: 10, sm: 12 },
             pb: 8,
+            minHeight: "100vh",
             backgroundColor: theme.palette.background.default,
           }}
         >
           <Container maxWidth='lg'>
-            <Alert
-              severity='warning'
-              variant='filled'
-              sx={{ mb: 4, borderRadius: 2 }}
-            >
-              Document not found
+            <Alert severity='warning' sx={{ mb: 2 }}>
+              Document not found or unavailable
             </Alert>
-
-            <Box sx={{ textAlign: "center", mt: 8 }}>
-              <Button
-                component={Link}
-                to='/documents'
-                startIcon={<ArrowBackIcon />}
-                variant='outlined'
-                color='primary'
-                size='large'
-              >
-                Back to Documents
-              </Button>
-            </Box>
+            <Button
+              component={Link}
+              to='/documents'
+              startIcon={<ArrowBackIcon />}
+              variant='contained'
+            >
+              Back to Documents
+            </Button>
           </Container>
         </Box>
-        <Footer />
       </>
     );
   }
@@ -353,7 +342,6 @@ const DocumentView = () => {
       <Box
         component='main'
         sx={{
-          minHeight: "100vh",
           pt: { xs: 10, sm: 12 },
           pb: 8,
           backgroundColor: theme.palette.background.default,
@@ -519,6 +507,96 @@ const DocumentView = () => {
                     aria-labelledby='document-tab-0'
                     sx={{ p: 2 }} // Reduced padding
                   >
+                    {/* Save success message */}
+                    {saveSuccess && (
+                      <Alert
+                        severity='success'
+                        sx={{ mb: 2 }}
+                        action={
+                          <IconButton
+                            aria-label='close'
+                            color='inherit'
+                            size='small'
+                            onClick={() => setSaveSuccess(false)}
+                          >
+                            <CloseIcon fontSize='inherit' />
+                          </IconButton>
+                        }
+                      >
+                        Document content saved successfully
+                      </Alert>
+                    )}
+
+                    {/* Save error message */}
+                    {saveError && (
+                      <Alert
+                        severity='error'
+                        sx={{ mb: 2 }}
+                        action={
+                          <IconButton
+                            aria-label='close'
+                            color='inherit'
+                            size='small'
+                            onClick={() => setSaveError(null)}
+                          >
+                            <CloseIcon fontSize='inherit' />
+                          </IconButton>
+                        }
+                      >
+                        {saveError}
+                      </Alert>
+                    )}
+
+                    {/* Edit/Save/Cancel button row */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        mb: 2,
+                        gap: 1,
+                      }}
+                    >
+                      {!isEditMode ? (
+                        <Button
+                          variant='outlined'
+                          color='primary'
+                          startIcon={<EditIcon />}
+                          onClick={handleEditClick}
+                          size='small'
+                        >
+                          Edit Content
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant='outlined'
+                            color='inherit'
+                            startIcon={<CancelIcon />}
+                            onClick={handleCancelEdit}
+                            size='small'
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant='contained'
+                            color='primary'
+                            startIcon={
+                              isSaving ? (
+                                <CircularProgress size={16} color='inherit' />
+                              ) : (
+                                <SaveIcon />
+                              )
+                            }
+                            onClick={handleSaveClick}
+                            disabled={isSaving}
+                            size='small'
+                          >
+                            {isSaving ? "Saving..." : "Save Changes"}
+                          </Button>
+                        </>
+                      )}
+                    </Box>
+
                     <Paper
                       elevation={0}
                       sx={{
@@ -531,11 +609,39 @@ const DocumentView = () => {
                         overflowY: "auto",
                       }}
                     >
-                      {markdownContent ? (
+                      {isEditMode ? (
+                        // Editor mode - TextField for editing markdown
+                        <TextField
+                          fullWidth
+                          multiline
+                          value={editedMarkdown}
+                          onChange={handleMarkdownChange}
+                          variant='outlined'
+                          minRows={20}
+                          inputProps={{
+                            style: {
+                              fontFamily: "monospace",
+                              fontSize: "0.875rem",
+                              lineHeight: "1.5",
+                            },
+                          }}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              backgroundColor:
+                                theme.palette.mode === "dark"
+                                  ? alpha(theme.palette.common.black, 0.2)
+                                  : alpha(theme.palette.common.white, 0.8),
+                            },
+                          }}
+                        />
+                      ) : // View mode - Rendered markdown
+                      markdownContent ? (
                         <Box
                           className='markdown-content'
                           sx={{
                             "& h1": {
+                              fontSize: "1.8rem",
+                              fontWeight: 700,
                               borderBottom: `1px solid ${theme.palette.divider}`,
                               pb: 1,
                               mb: 2,
@@ -571,7 +677,7 @@ const DocumentView = () => {
                               backgroundColor:
                                 theme.palette.mode === "dark"
                                   ? alpha(theme.palette.common.black, 0.3)
-                                  : alpha(theme.palette.common.black, 0.05),
+                                  : alpha(theme.palette.primary.main, 0.05),
                             },
                           }}
                         >
@@ -579,19 +685,31 @@ const DocumentView = () => {
                             remarkPlugins={[remarkGfm]}
                             rehypePlugins={[rehypeSanitize, rehypeRaw]}
                             components={{
-                              code({node, inline, className, children, ...props}) {
-                                const match = /language-(\w+)/.exec(className || '');
-                                const language = match ? match[1] : '';
+                              code({
+                                node,
+                                inline,
+                                className,
+                                children,
+                                ...props
+                              }) {
+                                const match = /language-(\w+)/.exec(
+                                  className || ""
+                                );
+                                const language = match ? match[1] : "";
                                 return !inline ? (
-                                  <Box sx={{ position: 'relative', mb: 2 }}>
+                                  <Box sx={{ position: "relative", mb: 2 }}>
                                     <SyntaxHighlighter
-                                      style={theme.palette.mode === 'dark' ? materialDark : undefined}
-                                      language={language || 'text'}
-                                      PreTag="div"
+                                      style={
+                                        theme.palette.mode === "dark"
+                                          ? materialDark
+                                          : undefined
+                                      }
+                                      language={language || "text"}
+                                      PreTag='div'
                                       {...props}
                                       wrapLongLines
                                     >
-                                      {String(children).replace(/\n$/, '')}
+                                      {String(children).replace(/\n$/, "")}
                                     </SyntaxHighlighter>
                                   </Box>
                                 ) : (
@@ -601,41 +719,48 @@ const DocumentView = () => {
                                 );
                               },
                               // Enhanced table rendering
-                              table({node, ...props}) {
+                              table({ node, ...props }) {
                                 return (
-                                  <Box sx={{ overflowX: 'auto', mb: 2 }}>
-                                    <table style={{ minWidth: '400px', width: '100%' }} {...props} />
+                                  <Box sx={{ overflowX: "auto", mb: 2 }}>
+                                    <table
+                                      style={{
+                                        minWidth: "400px",
+                                        width: "100%",
+                                      }}
+                                      {...props}
+                                    />
                                   </Box>
                                 );
                               },
                               // Better handling of images
-                              img({src, alt, ...props}) {
+                              img({ src, alt, ...props }) {
                                 return (
-                                  <img 
-                                    src={src} 
-                                    alt={alt || 'Document image'} 
-                                    style={{ maxWidth: '100%', height: 'auto' }}
+                                  <img
+                                    src={src}
+                                    alt={alt || "Document image"}
+                                    style={{ maxWidth: "100%", height: "auto" }}
                                     {...props}
                                     onError={(e) => {
                                       e.target.onerror = null;
-                                      e.target.src = '/assets/images/image-placeholder.png';
+                                      e.target.src =
+                                        "/assets/images/image-placeholder.png";
                                     }}
                                   />
                                 );
                               },
                               // Better paragraph handling
-                              p({children, ...props}) {
+                              p({ children, ...props }) {
                                 return (
-                                  <Typography 
-                                    component="p" 
-                                    variant="body1" 
+                                  <Typography
+                                    component='p'
+                                    variant='body1'
                                     sx={{ mb: 2, lineHeight: 1.7 }}
                                     {...props}
                                   >
                                     {children}
                                   </Typography>
                                 );
-                              }
+                              },
                             }}
                           >
                             {markdownContent}
@@ -667,7 +792,7 @@ const DocumentView = () => {
                         documentName={document.filename}
                         documentContext={{
                           title: document.filename,
-                          content: markdownContent
+                          content: markdownContent,
                         }}
                       />
                     ) : (
@@ -685,13 +810,28 @@ const DocumentView = () => {
                         <Typography variant='h6' gutterBottom>
                           {document.status === "processing"
                             ? "Document is still processing..."
-                            : "Document processing failed"}
+                            : "Document needs to be processed"}
                         </Typography>
-                        <Typography variant='body2' color='text.secondary'>
+                        <Typography
+                          variant='body1'
+                          color='text.secondary'
+                          sx={{ mb: 3 }}
+                        >
                           {document.status === "processing"
-                            ? "Chat will be available once document processing is complete. This might take a few minutes."
-                            : "There was an error processing this document. Please try uploading it again."}
+                            ? "Please wait while we extract the content from your document."
+                            : "We need to process this document before you can chat with it."}
                         </Typography>
+                        {document.status === "processing" ? (
+                          <CircularProgress size={40} />
+                        ) : (
+                          <Button
+                            variant='contained'
+                            color='primary'
+                            startIcon={<DescriptionIcon />}
+                          >
+                            Process Document
+                          </Button>
+                        )}
                       </Box>
                     )}
                   </Box>
@@ -703,80 +843,68 @@ const DocumentView = () => {
                     role='tabpanel'
                     id='document-tabpanel-2'
                     aria-labelledby='document-tab-2'
-                    sx={{
-                      p: 2, // Reduced padding
-                      minHeight: "350px", // Reduced minimum height
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
+                    sx={{ p: 3 }}
                   >
-                    {loading ? (
-                      <CircularProgress />
-                    ) : imageError ? (
-                      <Box sx={{ textAlign: "center", p: 4 }}>
-                        <Typography variant='h6' gutterBottom color='error'>
-                          Unable to load document image
-                        </Typography>
-                        <Typography variant='body2' color='text.secondary'>
-                          The original document image could not be loaded. This
-                          may be because the file is no longer available or
-                          requires authentication.
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Box
-                        sx={{
-                          position: "relative",
-                          width: "100%",
-                          textAlign: "center",
-                        }}
-                      >
-                        <Tooltip title='Click to enlarge'>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        minHeight: "60vh",
+                      }}
+                    >
+                      {document.image_base64 ? (
+                        <Tooltip title='Click to view in full size'>
                           <Box
                             sx={{
                               cursor: "zoom-in",
-                              display: "inline-block",
                               position: "relative",
+                              maxWidth: "100%",
+                              overflow: "hidden",
+                              textAlign: "center",
+                              transition: "transform 0.3s ease",
+                              "&:hover": {
+                                transform: "scale(1.02)",
+                              },
                             }}
+                            onClick={() =>
+                              handleOpenZoom(
+                                `data:image/jpeg;base64,${document.image_base64}`
+                              )
+                            }
                           >
-                            <ImageDisplay
-                              document={document}
-                              onError={() => setImageError(true)}
-                              enableZoom={true}
-                            />
                             <Box
+                              component='img'
+                              src={`data:image/jpeg;base64,${document.image_base64}`}
+                              alt={document.filename}
                               sx={{
-                                position: "absolute",
-                                top: 10,
-                                right: 10,
-                                bgcolor: alpha(
-                                  theme.palette.background.paper,
-                                  0.7
-                                ),
-                                borderRadius: "50%",
-                                p: 0.5,
-                                opacity: 0.8,
-                                transition: "opacity 0.2s ease",
-                                "&:hover": {
-                                  opacity: 1,
-                                },
+                                maxWidth: "100%",
+                                maxHeight: "70vh",
+                                borderRadius: 1,
+                                boxShadow: theme.shadows[4],
                               }}
-                            >
-                              <ZoomInIcon fontSize='small' color='primary' />
-                            </Box>
+                              onError={(e) => {
+                                setImageError(true);
+                                e.target.style.display = "none";
+                              }}
+                            />
+                            {/* Rest of the Box content remains the same */}
                           </Box>
                         </Tooltip>
+                      ) : (
                         <Typography
-                          variant='caption'
+                          variant='body1'
                           color='text.secondary'
-                          sx={{ mt: 2, display: "block" }}
+                          align='center'
+                          sx={{ mt: 3 }}
                         >
-                          Click on the image to view in full screen
+                          {imageError
+                            ? "Error loading document image."
+                            : "No document image available."}
                         </Typography>
-                      </Box>
-                    )}
+                      )}
+                    </Box>
                   </Box>
                 )}
               </Box>
@@ -800,145 +928,31 @@ const DocumentView = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
+          <Button onClick={handleDeleteCancel} color='primary'>
+            Cancel
+          </Button>
           <Button onClick={handleDelete} color='error' autoFocus>
             Delete
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Footer />
-    </>
-  );
-};
-
-const ImageDisplay = ({ document, onError, enableZoom = false }) => {
-  const theme = useTheme();
-  const [imageSrc, setImageSrc] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [openZoom, setOpenZoom] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
-
-  useEffect(() => {
-    const loadImage = async () => {
-      try {
-        setLoading(true);
-
-        // First check if document already has base64 image
-        if (document.image_base64) {
-          const src = document.image_base64.startsWith("data:")
-            ? document.image_base64
-            : `data:image/jpeg;base64,${document.image_base64}`;
-          setImageSrc(src);
-          setLoading(false);
-          return;
-        }
-
-        // If not, try to get it from the API
-        const imageData = await documentService.getDocumentImage(document.id);
-        if (imageData) {
-          const src = imageData.startsWith("data:")
-            ? imageData
-            : `data:image/jpeg;base64,${imageData}`;
-          setImageSrc(src);
-        } else {
-          // If we can't get the image data, set error
-          onError();
-        }
-      } catch (error) {
-        console.error("Error loading document image:", error);
-        onError();
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadImage();
-  }, [document, onError]);
-
-  const handleOpenZoom = () => {
-    setOpenZoom(true);
-    setZoomLevel(1); // Reset zoom when opening
-  };
-
-  const handleCloseZoom = () => {
-    setOpenZoom(false);
-  };
-
-  const zoomIn = (e) => {
-    e.stopPropagation();
-    setZoomLevel((prev) => Math.min(prev + 0.2, 3));
-  };
-
-  const zoomOut = (e) => {
-    e.stopPropagation();
-    setZoomLevel((prev) => Math.max(prev - 0.2, 0.5));
-  };
-
-  const resetZoom = (e) => {
-    e.stopPropagation();
-    setZoomLevel(1);
-  };
-
-  if (loading) {
-    return <CircularProgress />;
-  }
-
-  if (!imageSrc) {
-    return (
-      <Box sx={{ textAlign: "center", p: 4 }}>
-        <Typography variant='h6' gutterBottom color='error'>
-          Unable to load document image
-        </Typography>
-        <Typography variant='body2' color='text.secondary'>
-          The original document image could not be loaded.
-        </Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <>
-      <Box
-        component='img'
-        src={imageSrc}
-        alt={document.filename}
-        onClick={enableZoom ? handleOpenZoom : undefined}
-        onError={() => onError()}
-        sx={{
-          maxWidth: "100%",
-          width: "auto",
-          height: "auto",
-          maxHeight: "calc(100vh - 300px)",
-          minHeight: "300px",
-          objectFit: "contain",
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 1,
-          boxShadow: theme.shadows[2],
-          cursor: enableZoom ? "pointer" : "default",
-          transition: "transform 0.2s ease",
-          "&:hover": enableZoom
-            ? {
-                transform: "scale(1.02)",
-              }
-            : {},
-        }}
-      />
-
-      {/* Full-screen image modal */}
-      {enableZoom && (
+      {/* Image zoom modal */}
+      {document && (
         <Modal
-          open={openZoom}
+          open={zoomDialogOpen}
           onClose={handleCloseZoom}
           closeAfterTransition
-          BackdropComponent={Backdrop}
-          BackdropProps={{
-            timeout: 500,
-            sx: { backgroundColor: alpha(theme.palette.common.black, 0.9) },
+          slots={{
+            backdrop: Backdrop,
+          }}
+          slotProps={{
+            backdrop: {
+              timeout: 500,
+            },
           }}
         >
-          <Fade in={openZoom}>
+          <Fade in={zoomDialogOpen}>
             <Box
               sx={{
                 position: "absolute",
@@ -947,28 +961,28 @@ const ImageDisplay = ({ document, onError, enableZoom = false }) => {
                 transform: "translate(-50%, -50%)",
                 width: "100%",
                 height: "100%",
-                outline: "none",
+                bgcolor: "rgba(0, 0, 0, 0.9)",
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "center",
                 alignItems: "center",
-                overflow: "hidden",
+                justifyContent: "center",
+                cursor: "pointer",
+                outline: "none",
               }}
+              onClick={handleCloseZoom}
             >
-              {/* Controls toolbar */}
               <Box
                 sx={{
                   position: "absolute",
                   top: 16,
                   right: 16,
-                  zIndex: 10,
+                  bgcolor: alpha(theme.palette.background.paper, 0.2),
                   display: "flex",
-                  gap: 1,
-                  bgcolor: alpha(theme.palette.background.paper, 0.7),
-                  backdropFilter: "blur(5px)",
-                  borderRadius: 2,
                   p: 0.5,
+                  borderRadius: 1,
+                  backdropFilter: "blur(5px)",
                 }}
+                onClick={(e) => e.stopPropagation()}
               >
                 <Tooltip title='Zoom out'>
                   <IconButton onClick={zoomOut} size='small' color='inherit'>

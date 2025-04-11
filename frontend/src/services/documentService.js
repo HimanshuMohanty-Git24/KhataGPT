@@ -115,6 +115,56 @@ export const documentService = {
   },
 
   /**
+   * Update document content (markdown)
+   * @param {string} id - Document ID
+   * @param {string} content - New content in markdown format
+   * @returns {Promise<Object>} - Promise resolving to update result
+   */
+  updateDocumentContent: async (id, content) => {
+    if (!id || id === "undefined") {
+      throw new Error("Invalid document ID");
+    }
+
+    try {
+      console.log(`Updating content for document ${id}, content length: ${content.length}`);
+      const response = await api.put(`/documents/${id}/content`, {
+        content: content
+      });
+      
+      console.log("Update content response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating document content for ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update document title
+   * @param {string} id - Document ID
+   * @param {string} title - New document title
+   * @returns {Promise<Object>} - Promise resolving to update result
+   */
+  updateDocumentTitle: async (id, title) => {
+    if (!id || id === "undefined") {
+      throw new Error("Invalid document ID");
+    }
+
+    try {
+      console.log(`Updating title for document ${id} to: ${title}`);
+      const response = await api.put(`/documents/${id}/title`, {
+        title: title
+      });
+      
+      console.log("Update title response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating document title for ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Upload documents
    * @param {FormData} formData - Form data containing files and metadata
    * @param {Function} onUploadProgress - Progress callback
