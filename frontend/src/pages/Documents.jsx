@@ -276,6 +276,7 @@ const Documents = () => {
                         sortDirection={sortDirection}
                         onFilterChange={handleFilterChange}
                         filterStatus={filterStatus}
+                        onSwitchToUpload={() => setTabValue(1)}
                       />
                     )}
                   </motion.div>

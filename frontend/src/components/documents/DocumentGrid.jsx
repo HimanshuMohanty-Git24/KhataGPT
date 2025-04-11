@@ -39,6 +39,7 @@ const DocumentGrid = ({
   sortDirection = "desc",
   onFilterChange,
   filterStatus = "all",
+  onSwitchToUpload,
 }) => {
   const theme = useTheme();
   const [page, setPage] = useState(1);
@@ -65,28 +66,31 @@ const DocumentGrid = ({
       setPage(1);
       return;
     }
-  
+
     // Debounce to avoid excessive filtering when typing
     const timer = setTimeout(() => {
       const query = localSearchQuery.toLowerCase();
-      
+
       // Enhanced filtering that looks for content in all possible fields
-      const filtered = documents.filter(doc => {
+      const filtered = documents.filter((doc) => {
         // Check title, content and type
-        const titleMatch = doc.filename && doc.filename.toLowerCase().includes(query);
-        const contentMatch = 
-          (doc.extracted_text && doc.extracted_text.toLowerCase().includes(query)) || 
+        const titleMatch =
+          doc.filename && doc.filename.toLowerCase().includes(query);
+        const contentMatch =
+          (doc.extracted_text &&
+            doc.extracted_text.toLowerCase().includes(query)) ||
           (doc.content && doc.content.toLowerCase().includes(query));
-        const typeMatch = doc.doc_type && doc.doc_type.toLowerCase().includes(query);
-        
+        const typeMatch =
+          doc.doc_type && doc.doc_type.toLowerCase().includes(query);
+
         return titleMatch || contentMatch || typeMatch;
       });
-      
+
       // Set filtered results to state variable
       setLocalSearchResults(filtered);
       setPage(1);
     }, 300);
-    
+
     return () => clearTimeout(timer);
   }, [localSearchQuery, documents]);
 
@@ -115,7 +119,7 @@ const DocumentGrid = ({
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setLocalSearchQuery(value); // Update local state immediately for UI
-    
+
     // Only trigger server-side search for non-trivial searches
     if (value.trim().length > 2 || value.trim() === "") {
       setSearchQuery(value); // Update parent state
@@ -129,8 +133,8 @@ const DocumentGrid = ({
       e.stopPropagation(); // Stop propagation
     }
     setLocalSearchQuery(""); // Clear local search
-    setSearchQuery("");      // Clear parent state
-    onSearch("");           // Trigger search with empty query
+    setSearchQuery(""); // Clear parent state
+    onSearch(""); // Trigger search with empty query
   };
 
   const handleSortChange = (e) => {
@@ -154,7 +158,7 @@ const DocumentGrid = ({
     <Box sx={{ width: "100%" }}>
       {/* Search and Filter Bar */}
       <Paper
-        component="form"
+        component='form'
         onSubmit={(e) => e.preventDefault()} // Prevent form submission to avoid page refresh
         elevation={1}
         sx={{
@@ -175,21 +179,21 @@ const DocumentGrid = ({
             alignItems: "center",
           }}
         >
-          <IconButton sx={{ p: "10px" }} aria-label="search" disabled>
+          <IconButton sx={{ p: "10px" }} aria-label='search' disabled>
             <SearchIcon />
           </IconButton>
           <InputBase
             sx={{ ml: 1, flex: 1 }}
-            placeholder="Search documents by content or title..."
+            placeholder='Search documents by content or title...'
             inputProps={{ "aria-label": "search documents" }}
             value={localSearchQuery}
             onChange={handleSearchChange}
-            autoComplete="off"
+            autoComplete='off'
           />
           {localSearchQuery && (
             <IconButton
               sx={{ p: "10px" }}
-              aria-label="clear search"
+              aria-label='clear search'
               onClick={handleClearSearch}
             >
               <ClearIcon />
@@ -208,10 +212,10 @@ const DocumentGrid = ({
         >
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <SortIcon
-              fontSize="small"
+              fontSize='small'
               sx={{ color: theme.palette.text.secondary, mr: 1 }}
             />
-            <FormControl size="small" variant="outlined" sx={{ minWidth: 120 }}>
+            <FormControl size='small' variant='outlined' sx={{ minWidth: 120 }}>
               <Select
                 value={sortBy}
                 onChange={handleSortChange}
@@ -226,20 +230,20 @@ const DocumentGrid = ({
                   },
                 }}
               >
-                <MenuItem value="uploaded_at">Date Added</MenuItem>
-                <MenuItem value="filename">File Name</MenuItem>
-                <MenuItem value="status">Status</MenuItem>
-                <MenuItem value="file_size">File Size</MenuItem>
+                <MenuItem value='uploaded_at'>Date Added</MenuItem>
+                <MenuItem value='filename'>File Name</MenuItem>
+                <MenuItem value='status'>Status</MenuItem>
+                <MenuItem value='file_size'>File Size</MenuItem>
               </Select>
             </FormControl>
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <FilterListIcon
-              fontSize="small"
+              fontSize='small'
               sx={{ color: theme.palette.text.secondary, mr: 1 }}
             />
-            <FormControl size="small" variant="outlined" sx={{ minWidth: 120 }}>
+            <FormControl size='small' variant='outlined' sx={{ minWidth: 120 }}>
               <Select
                 value={filterStatus}
                 onChange={handleFilterChange}
@@ -254,19 +258,23 @@ const DocumentGrid = ({
                   },
                 }}
               >
-                <MenuItem value="all">All Status</MenuItem>
-                <MenuItem value="processed">Processed</MenuItem>
-                <MenuItem value="processing">Processing</MenuItem>
-                <MenuItem value="failed">Failed</MenuItem>
+                <MenuItem value='all'>All Status</MenuItem>
+                <MenuItem value='processed'>Processed</MenuItem>
+                <MenuItem value='processing'>Processing</MenuItem>
+                <MenuItem value='failed'>Failed</MenuItem>
               </Select>
             </FormControl>
           </Box>
 
           <Button
-            component={Link}
-            to="/documents/upload"
-            variant="contained"
-            size="small"
+            onClick={() => {
+              // Find the parent Documents component's setTabValue function and call it
+              if (onSwitchToUpload) {
+                onSwitchToUpload();
+              }
+            }}
+            variant='contained'
+            size='small'
             startIcon={<AddIcon />}
             sx={{
               borderRadius: "20px",
@@ -280,14 +288,14 @@ const DocumentGrid = ({
       </Paper>
 
       {/* Document Grid */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode='wait'>
         {loading || isLocalSearching ? (
-          <Grid container spacing={3} key="loading-grid">
+          <Grid container spacing={3} key='loading-grid'>
             {renderSkeletons()}
           </Grid>
         ) : localSearchResults.length > 0 ? (
           <motion.div
-            key="documents-grid"
+            key='documents-grid'
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -301,10 +309,10 @@ const DocumentGrid = ({
                   md={4}
                   key={document.id || `doc-${Math.random()}`}
                 >
-                  <DocumentCard 
-                    document={document} 
-                    onDelete={onDelete} 
-                    searchQuery={localSearchQuery} 
+                  <DocumentCard
+                    document={document}
+                    onDelete={onDelete}
+                    searchQuery={localSearchQuery}
                   />
                 </Grid>
               ))}
@@ -320,9 +328,9 @@ const DocumentGrid = ({
                   count={totalPages}
                   page={page}
                   onChange={handlePageChange}
-                  variant="outlined"
-                  shape="rounded"
-                  color="primary"
+                  variant='outlined'
+                  shape='rounded'
+                  color='primary'
                 />
               </Stack>
             )}
@@ -338,7 +346,7 @@ const DocumentGrid = ({
               textAlign: "center",
             }}
             component={motion.div}
-            key="empty-state"
+            key='empty-state'
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -350,12 +358,12 @@ const DocumentGrid = ({
                 mb: 2,
               }}
             />
-            <Typography variant="h6" gutterBottom>
+            <Typography variant='h6' gutterBottom>
               No documents found
             </Typography>
             <Typography
-              variant="body2"
-              color="textSecondary"
+              variant='body2'
+              color='textSecondary'
               sx={{ mb: 3, maxWidth: "500px" }}
             >
               {localSearchQuery
@@ -364,7 +372,7 @@ const DocumentGrid = ({
             </Typography>
             {localSearchQuery && (
               <Button
-                variant="outlined"
+                variant='outlined'
                 startIcon={<ClearIcon />}
                 onClick={() => handleClearSearch()}
                 sx={{ mb: 2 }}
@@ -374,8 +382,8 @@ const DocumentGrid = ({
             )}
             <Button
               component={Link}
-              to="/documents/upload"
-              variant="contained"
+              to='/documents/upload'
+              variant='contained'
               startIcon={<AddIcon />}
             >
               Upload Document

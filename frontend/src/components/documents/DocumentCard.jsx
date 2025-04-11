@@ -7,7 +7,6 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Chip,
   Box,
   Tooltip,
   Dialog,
@@ -20,7 +19,7 @@ import {
   alpha,
   Skeleton,
   Divider,
-  Paper,
+  TextField,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -46,6 +45,7 @@ import ContactMailIcon from "@mui/icons-material/ContactMail";
 import BadgeIcon from "@mui/icons-material/Badge";
 import GavelIcon from "@mui/icons-material/Gavel";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { documentService } from "../../services/documentService";
 
 // Helper function to get document type color
 const getDocTypeColor = (docType) => {
@@ -183,6 +183,8 @@ const DocumentCard = ({
   const [anchorEl, setAnchorEl] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [editTitleDialogOpen, setEditTitleDialogOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
 
   // Menu handlers
   const handleMenuOpen = (event) => {
@@ -214,6 +216,48 @@ const DocumentCard = ({
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
+  };
+
+  const handleEditTitleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleMenuClose();
+    // Initialize with current title
+    setNewTitle(document.filename || "");
+    setEditTitleDialogOpen(true);
+  };
+
+  const handleEditTitleCancel = () => {
+    setEditTitleDialogOpen(false);
+  };
+
+  const handleEditTitleConfirm = async () => {
+    try {
+      // Don't update if title is empty
+      if (!newTitle.trim()) {
+        return;
+      }
+
+      await documentService.updateDocumentTitle(document.id, newTitle);
+
+      // Update local state if needed (optional - depends on your app's refresh strategy)
+      // This may require lifting state up or using context
+
+      setEditTitleDialogOpen(false);
+
+      // Refresh the document list if applicable
+      if (typeof window !== "undefined") {
+        // Simple reload to see changes - in a real app, you might use a more elegant refresh method
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Failed to update document title:", error);
+      // You could add error handling UI here
+    }
+  };
+
+  const handleTitleChange = (e) => {
+    setNewTitle(e.target.value);
   };
 
   // Prevent default for all card action clicks to avoid navigation
@@ -640,6 +684,19 @@ const DocumentCard = ({
               View Document
             </MenuItem>
             <MenuItem
+              onClick={handleEditTitleClick}
+              disabled={!hasValidId}
+              sx={{
+                py: 1.5,
+                "&:hover": {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                },
+              }}
+            >
+              <EditIcon fontSize='small' sx={{ mr: 1.5 }} />
+              Edit Title
+            </MenuItem>
+            <MenuItem
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -738,6 +795,76 @@ const DocumentCard = ({
             }}
           >
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={editTitleDialogOpen}
+        onClose={handleEditTitleCancel}
+        aria-labelledby='edit-title-dialog-title'
+        onClick={(e) => e.stopPropagation()} // Stop propagation
+        PaperProps={{
+          elevation: 3,
+          sx: {
+            borderRadius: 3,
+            px: 1,
+            py: 1,
+            maxWidth: "500px",
+            width: "100%",
+            backdropFilter: "blur(10px)",
+            boxShadow:
+              theme.palette.mode === "dark"
+                ? `0 10px 30px rgba(0, 0, 0, 0.4)`
+                : `0 10px 30px rgba(0, 0, 0, 0.15)`,
+          },
+        }}
+      >
+        <DialogTitle id='edit-title-dialog-title' sx={{ pb: 1, pt: 2 }}>
+          Edit Document Title
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin='dense'
+            label='Document Title'
+            type='text'
+            fullWidth
+            variant='outlined'
+            value={newTitle}
+            onChange={handleTitleChange}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1 }}>
+          <Button
+            onClick={handleEditTitleCancel}
+            color='inherit'
+            variant='outlined'
+            sx={{
+              borderRadius: "50px",
+              px: 2.5,
+              textTransform: "none",
+              fontWeight: 500,
+              boxShadow: `0 2px 5px ${alpha(theme.palette.common.black, 0.05)}`,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleEditTitleConfirm}
+            color='primary'
+            variant='contained'
+            disableElevation
+            autoFocus
+            sx={{
+              borderRadius: "50px",
+              px: 2.5,
+              textTransform: "none",
+              fontWeight: 600,
+              boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
+            }}
+          >
+            Save
           </Button>
         </DialogActions>
       </Dialog>
