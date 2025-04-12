@@ -492,9 +492,21 @@ const DocumentView = () => {
                   aria-controls='document-tabpanel-1'
                 />
                 <Tab
-                  icon={<ImageIcon fontSize='small' />}
+                  icon={
+                    document?.file_type === "pdf" ? (
+                      <PictureAsPdfIcon fontSize='small' />
+                    ) : (
+                      <ImageIcon fontSize='small' />
+                    )
+                  }
                   iconPosition='start'
-                  label={isMobile ? "" : "Document Image"}
+                  label={
+                    isMobile
+                      ? ""
+                      : document?.file_type === "pdf"
+                      ? "Document PDF"
+                      : "Document Image"
+                  }
                   id='document-tab-2'
                   aria-controls='document-tabpanel-2'
                 />
