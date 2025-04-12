@@ -60,11 +60,16 @@ async def create_document(file: UploadFile = File(None), document: DocumentCreat
         # Convert to base64
         base64_string = base64.b64encode(contents).decode()
         
-        # Create document with base64 image - use a placeholder title that will be replaced
+        # Determine file type
+        file_extension = file.filename.split('.')[-1].lower()
+        file_type = "pdf" if file_extension == "pdf" else "image"
+        
+        # Create document with appropriate metadata
         document = DocumentCreate(
             title="Document being processed...",  # Temporary title
             doc_type="unknown",
-            image_base64=base64_string
+            image_base64=base64_string,
+            file_type=file_type  # Set file type based on extension
         )
     
     # Process the document
@@ -182,11 +187,16 @@ async def upload_document(
     # Convert to base64
     base64_string = base64.b64encode(contents).decode()
     
-    # Create document with base64 image - use a placeholder title
+    # Determine file type
+    file_extension = file.filename.split('.')[-1].lower()
+    file_type = "pdf" if file_extension == "pdf" else "image"
+    
+    # Create document with base64 data
     document = DocumentCreate(
         title="Document being processed...",  # Always use placeholder, title will be generated later
         doc_type=doc_type,
-        image_base64=base64_string
+        image_base64=base64_string,
+        file_type=file_type  # Set file type based on extension
     )
     
     # Process and create document

@@ -85,7 +85,7 @@ const formatDocType = (docType) => {
 
 // Helper function to determine icon based on file type
 const getFileIcon = (document) => {
-  // First check document type (more specific)
+  // First check document type (more specific) regardless of file format
   if (document.doc_type) {
     const docType = document.doc_type.toLowerCase();
 
@@ -114,7 +114,12 @@ const getFileIcon = (document) => {
     }
   }
 
-  // If no doc_type is available, fall back to file extension
+  // If no doc_type is available, check file type
+  if (document.file_type === "pdf") {
+    return <PictureAsPdfIcon />;
+  }
+
+  // Finally, fall back to file extension
   const extension = document.filename?.split(".").pop()?.toLowerCase() || "";
 
   switch (extension) {
@@ -141,8 +146,15 @@ const formatDate = (dateString) => {
       return "Date unavailable";
     }
 
-    const options = { year: "numeric", month: "short", day: "numeric" };
-    return date.toLocaleDateString(undefined, options);
+    // Include both date and time for better context
+    const options = { 
+      year: "numeric", 
+      month: "short", 
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    };
+    return date.toLocaleString(undefined, options);
   } catch (error) {
     console.error("Error formatting date:", error);
     return "Date unavailable";
@@ -201,7 +213,13 @@ const DocumentCard = ({
     }
     setAnchorEl(null);
   };
+  const isPdf =
+    document?.filename?.toLowerCase().endsWith(".pdf") ||
+    document?.doc_type?.toLowerCase().includes("pdf");
 
+  const getFileExtension = (filename) => {
+    return filename?.split(".").pop()?.toLowerCase() || "";
+  };
   const handleDeleteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -486,42 +504,7 @@ const DocumentCard = ({
               >
                 {formatDocType(document.doc_type)}
               </Typography>
-
-              {/* <Chip
-                size='small'
-                label={statusInfo.text}
-                color={statusInfo.color}
-                variant='outlined'
-                sx={{
-                  borderRadius: "10px",
-                  height: "24px",
-                  fontSize: "0.7rem",
-                  fontWeight: 500,
-                  "& .MuiChip-label": {
-                    px: 1,
-                  },
-                  boxShadow: `0 1px 3px ${alpha(
-                    theme.palette.common.black,
-                    0.08
-                  )}`,
-                }}
-              /> */}
             </Box>
-
-            {/* File Size */}
-            {document.file_size && (
-              <Typography
-                variant='caption'
-                sx={{
-                  color: alpha(theme.palette.text.secondary, 0.8),
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                }}
-              >
-                File size: {(document.file_size / 1024 / 1024).toFixed(2)} MB
-              </Typography>
-            )}
           </Box>
           {document.extracted_text &&
             searchQuery &&

@@ -381,8 +381,7 @@ const DocumentGrid = ({
               </Button>
             )}
             <Button
-              component={Link}
-              to='/documents/upload'
+              onClick={onSwitchToUpload} // Change here - call onSwitchToUpload directly
               variant='contained'
               startIcon={<AddIcon />}
             >

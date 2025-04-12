@@ -30,22 +30,35 @@ class DocumentProcessor:
             Processed document data with extracted text
         """
         try:
-            # Get image data
-            image_base64 = document_data.image_base64
-            
-            # Process image and extract text
-            if image_base64:
-                # Decode base64 to get binary data for processing
-                image_binary = base64.b64decode(image_base64)
+            # Get image/PDF data
+            if not document_data.image_base64:
+                return document_data
                 
+            # Determine file type - default to image if not specified
+            file_type = document_data.file_type if hasattr(document_data, "file_type") else "image"
+            
+            # Decode base64 to get binary data for processing
+            file_binary = base64.b64decode(document_data.image_base64)
+            
+            if file_type == "pdf":
+                # Process PDF with Gemini
+                extracted_text = self.extract_text_from_pdf(document_data.image_base64)
+                
+                # Update document with extracted info
+                document_data.extracted_text = extracted_text
+                
+                # No additional processing needed for PDF binary data
+                # Keep original base64 for PDF viewing
+            else:
+                # Process as image (existing code)
                 # Create a BytesIO object from the binary data
-                image_io = BytesIO(image_binary)
+                image_io = BytesIO(file_binary)
                 
                 # Open the image
                 img = Image.open(image_io)
                 
                 # Convert to JPG and resize if needed
-                jpg_buffer = convert_to_jpg(BytesIO(image_binary))
+                jpg_buffer = convert_to_jpg(BytesIO(file_binary))
                 img = resize_image_if_needed(img)
                 
                 # Get base64 encoded image for Gemini
@@ -54,16 +67,16 @@ class DocumentProcessor:
                 # Extract text with Gemini
                 extracted_text = self.extract_text_with_gemini(processed_base64)
                 
-                # Always generate a title from the content
-                document_data.title = self.generate_document_title(extracted_text)
-                
-                # Detect document type if not specified
-                if document_data.doc_type == "unknown":
-                    document_data.doc_type = self.detect_document_type(extracted_text)
-                
                 # Update document with extracted info
                 document_data.extracted_text = extracted_text
-                document_data.image_base64 = processed_base64  # Update with possibly optimized image
+                document_data.image_base64 = processed_base64  # Update with optimized image
+            
+            # Always generate a title from the content
+            document_data.title = self.generate_document_title(document_data.extracted_text)
+            
+            # Detect document type if not specified
+            if document_data.doc_type == "unknown":
+                document_data.doc_type = self.detect_document_type(document_data.extracted_text)
             
             return document_data
         
@@ -73,7 +86,7 @@ class DocumentProcessor:
             if not document_data.extracted_text:
                 document_data.extracted_text = f"Error processing document: {str(e)}"
             return document_data
-    
+
     def extract_text_with_gemini(self, image_base64):
         """Extract text from image using Gemini"""
         try:
@@ -85,6 +98,29 @@ class DocumentProcessor:
             return response.text
         except Exception as e:
             return f"Error extracting text: {str(e)}"
+    
+    def extract_text_from_pdf(self, base64_pdf: str) -> str:
+        """Extract text from PDF using Gemini"""
+        try:
+            # Convert base64 to binary
+            pdf_bytes = base64.b64decode(base64_pdf)
+            
+            # Configure Gemini
+            model = genai.GenerativeModel('gemini-2.0-pro-exp-02-05')
+            
+            # Create a prompt with PDF content
+            response = model.generate_content([
+                DOCUMENT_SYSTEM_PROMPT,
+                {
+                    "mime_type": "application/pdf",
+                    "data": pdf_bytes
+                }
+            ])
+            
+            return response.text
+        except Exception as e:
+            print(f"Error extracting text from PDF: {e}")
+            return f"Error extracting text from PDF: {str(e)}"
     
     def generate_document_title(self, extracted_text):
         """Generate a descriptive title for the document"""

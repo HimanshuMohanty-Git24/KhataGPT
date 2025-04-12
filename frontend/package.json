@@ -17,6 +17,7 @@
     "axios": "^1.8.4",
     "framer-motion": "^12.5.0",
     "lottie-react": "^2.4.1",
+    "pdfjs-dist": "^4.8.69",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
@@ -37,6 +38,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "prestart": "node scripts/copy-pdf-worker.js",
+    "prebuild": "node scripts/copy-pdf-worker.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -61,6 +64,7 @@
     ]
   },
   "devDependencies": {
-    "ajv": "^7.2.4"
+    "ajv": "^7.2.4",
+    "copyfiles": "^2.4.1"
   }
 }

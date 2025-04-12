@@ -1,23 +1,31 @@
 import api from "./api";
 
 const transformDocument = (doc) => {
-  if (!doc) return null;
-
-  // Map the doc_type to status - all valid document types should be considered "processed"
-  let status = doc.status || "unknown";
-  if (doc.doc_type && doc.doc_type !== "unknown" && !status) {
-    status = "processed";
+  // The backend stores date in 'created_at', but frontend uses 'uploaded_at'
+  let uploadDate = doc.uploaded_at || doc.created_at;
+  
+  if (!uploadDate) {
+    console.warn(`Document ${doc._id || doc.id} missing date information, using fallback`);
+    uploadDate = new Date().toISOString();
+  } else if (typeof uploadDate === 'string' && !isNaN(Date.parse(uploadDate))) {
+    // Just parse it to ensure valid format, but don't create a new date object
+    // which would reset to current time
+    uploadDate = new Date(uploadDate).toISOString();
+  } else if (uploadDate instanceof Date) {
+    // If it's already a Date object, convert to ISO string
+    uploadDate = uploadDate.toISOString();
   }
-
+  
   return {
     id: doc._id || doc.id,
-    filename: doc.title || doc.filename || "Unnamed document",
-    status: status,
+    filename: doc.title || doc.filename || "Untitled Document",
     doc_type: doc.doc_type || "unknown",
-    uploaded_at: doc.created_at || doc.uploaded_at,
-    file_size: doc.file_size || doc.size,
-    extracted_text: doc.extracted_text || doc.content || "", // Make sure we get all possible content fields
+    status: doc.status || "unknown",
+    uploaded_at: uploadDate,  // Map created_at to uploaded_at
+    extracted_text: doc.extracted_text || "",
     image_base64: doc.image_base64 || "",
+    file_type: doc.file_type || "image",
+    file_size: doc.file_size || 0,
   };
 };
 
@@ -48,6 +56,13 @@ export const documentService = {
           title: response.data[0].title || response.data[0].filename,
           hasExtractedText: !!response.data[0].extracted_text,
           extractedTextLength: response.data[0].extracted_text?.length || 0,
+        });
+      }
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        console.log("First document date fields:", {
+          created_at: response.data[0].created_at,
+          uploaded_at: response.data[0].uploaded_at,
+          transformed: transformDocument(response.data[0]).uploaded_at
         });
       }
 
@@ -126,11 +141,13 @@ export const documentService = {
     }
 
     try {
-      console.log(`Updating content for document ${id}, content length: ${content.length}`);
+      console.log(
+        `Updating content for document ${id}, content length: ${content.length}`
+      );
       const response = await api.put(`/documents/${id}/content`, {
-        content: content
+        content: content,
       });
-      
+
       console.log("Update content response:", response.data);
       return response.data;
     } catch (error) {
@@ -153,9 +170,9 @@ export const documentService = {
     try {
       console.log(`Updating title for document ${id} to: ${title}`);
       const response = await api.put(`/documents/${id}/title`, {
-        title: title
+        title: title,
       });
-      
+
       console.log("Update title response:", response.data);
       return response.data;
     } catch (error) {
@@ -226,17 +243,23 @@ export const documentService = {
 
       // Otherwise, try to fetch the image separately
       try {
-        // FIX: Remove the incorrect /api prefix
         const response = await api.get(`/documents/${id}/file`);
         return response.data.image || "";
       } catch (imageError) {
-        console.error(`Error fetching document image for ${id}:`, imageError);
+        console.error(`Error fetching document file for ${id}:`, imageError);
         return "";
       }
     } catch (error) {
       console.error(`Error fetching document for ${id}:`, error);
       throw error;
     }
+  },
+
+  /**
+   * Determine if a document is a PDF
+   */
+  isPDF: (document) => {
+    return document && document.file_type === "pdf";
   },
 };
 

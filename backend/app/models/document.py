@@ -27,9 +27,11 @@ class DocumentBase(BaseModel):
     title: str
     doc_type: str = "unknown"
     extracted_text: Optional[str] = None
+    file_type: str = "image"  # Add this field with default "image"
 
 class DocumentCreate(DocumentBase):
     image_base64: Optional[str] = None
+    file_type: str = "image"  # Add explicit definition here too
     
     model_config = ConfigDict(
         arbitrary_types_allowed=True,

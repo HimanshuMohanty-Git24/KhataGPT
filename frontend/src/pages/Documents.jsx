@@ -45,31 +45,33 @@ const Documents = () => {
   const fetchDocuments = async (searchTerm = searchQuery) => {
     setLoading(true);
     setError(null);
-  
+
     try {
       // Log what we're searching for
       console.log("Searching documents with term:", searchTerm);
-      
+
       // Use the passed parameter instead of the state variable
       const documents = await documentService.getAllDocuments(searchTerm);
       console.log("Fetched documents:", documents);
-      
+
       // Validate if documents have the necessary content fields
-      documents.forEach(doc => {
+      documents.forEach((doc) => {
         if (!doc.extracted_text) {
-          console.warn(`Document ${doc.id} (${doc.filename}) has no extracted_text field`);
-          
+          console.warn(
+            `Document ${doc.id} (${doc.filename}) has no extracted_text field`
+          );
+
           // Log document to help debug the issue
           console.log(`Document details:`, {
             id: doc.id,
             title: doc.filename,
             type: doc.doc_type,
             fields: Object.keys(doc),
-            receivedFields: doc
+            receivedFields: doc,
           });
         }
       });
-      
+
       setDocuments(Array.isArray(documents) ? documents : []);
     } catch (err) {
       console.error("Failed to fetch documents:", err);
@@ -102,16 +104,16 @@ const Documents = () => {
   };
 
   const handleSearchSubmit = (query) => {
-  setSearchQuery(query);
-  
-  // Only make API calls for non-empty searches
-  if (query.trim() !== "") {
-    fetchDocuments(query);
-  } else {
-    // If search is cleared, refresh documents to get full list
-    refreshDocuments();
-  }
-};
+    setSearchQuery(query);
+
+    // Only make API calls for non-empty searches
+    if (query.trim() !== "") {
+      fetchDocuments(query);
+    } else {
+      // If search is cleared, refresh documents to get full list
+      refreshDocuments();
+    }
+  };
 
   const handleSortChange = (value) => {
     if (sortBy === value) {
@@ -119,7 +121,9 @@ const Documents = () => {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortBy(value);
-      setSortDirection("desc"); // Default to descending for a new sort column
+
+      // Always use "desc" for date fields to show newest first
+      setSortDirection("desc");
     }
   };
 
@@ -143,8 +147,15 @@ const Documents = () => {
         const comparison = aValue.localeCompare(bValue);
         return sortDirection === "asc" ? comparison : -comparison;
       } else if (sortBy === "uploaded_at") {
-        const aDate = new Date(aValue || 0);
-        const bDate = new Date(bValue || 0);
+        // Safely parse dates or fallback to epoch start (1970)
+        const aDate = a[sortBy] ? new Date(a[sortBy]).getTime() : 0;
+        const bDate = b[sortBy] ? new Date(b[sortBy]).getTime() : 0;
+        
+        // Log if we find documents with identical timestamps
+        if (aDate === bDate) {
+          console.log("Documents with identical timestamps:", a.id, b.id);
+        }
+        
         return sortDirection === "asc" ? aDate - bDate : bDate - aDate;
       } else {
         return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
@@ -160,7 +171,7 @@ const Documents = () => {
       <Header />
 
       <Box
-        component="main"
+        component='main'
         sx={{
           minHeight: "calc(100vh - 64px)", // Subtract header height
           pt: { xs: 3, sm: 4 }, // Reduced top padding
@@ -168,28 +179,28 @@ const Documents = () => {
           backgroundColor: theme.palette.background.default,
         }}
       >
-        <Container maxWidth="xl">
+        <Container maxWidth='xl'>
           <Box sx={{ mb: 4 }}>
             <Typography
-              variant="h4"
-              component="h1"
+              variant='h4'
+              component='h1'
               sx={{ mb: 1, fontWeight: 700 }}
             >
               Documents
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant='body1' color='text.secondary'>
               Upload, manage, and chat with your documents
             </Typography>
           </Box>
 
           {error && (
             <Alert
-              severity="error"
+              severity='error'
               sx={{ mb: 4, borderRadius: 2 }}
               action={
                 <Button
-                  color="inherit"
-                  size="small"
+                  color='inherit'
+                  size='small'
                   startIcon={<RefreshIcon />}
                   onClick={refreshDocuments}
                   disabled={isRefreshing}
@@ -228,15 +239,15 @@ const Documents = () => {
                 }}
               >
                 <Tab
-                  label="All Documents"
+                  label='All Documents'
                   icon={<AssessmentIcon />}
-                  iconPosition="start"
+                  iconPosition='start'
                   sx={{ py: 2 }}
                 />
                 <Tab
-                  label="Upload"
+                  label='Upload'
                   icon={<CloudUploadIcon />}
-                  iconPosition="start"
+                  iconPosition='start'
                   sx={{ py: 2 }}
                 />
               </Tabs>
@@ -259,7 +270,7 @@ const Documents = () => {
                         }}
                       >
                         <CircularProgress size={60} sx={{ mb: 4 }} />
-                        <Typography variant="h6" color="text.secondary">
+                        <Typography variant='h6' color='text.secondary'>
                           Loading documents...
                         </Typography>
                       </Box>
@@ -301,8 +312,8 @@ const Documents = () => {
                     >
                       <Button
                         onClick={() => setTabValue(0)}
-                        color="primary"
-                        variant="outlined"
+                        color='primary'
+                        variant='outlined'
                         startIcon={<AssessmentIcon />}
                       >
                         Back to Documents

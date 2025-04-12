@@ -48,9 +48,11 @@ import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf"; // Add PDF icon
 import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
 import ChatInterface from "../components/chat/ChatInterface";
+import PDFViewer from "../components/documents/PDFViewer"; // Import the PDF Viewer
 import { documentService } from "../services/documentService";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -837,7 +839,7 @@ const DocumentView = () => {
                   </Box>
                 )}
 
-                {/* Document Image Tab */}
+                {/* Document Image/PDF Tab */}
                 {tabValue === 2 && (
                   <Box
                     role='tabpanel'
@@ -855,43 +857,48 @@ const DocumentView = () => {
                       }}
                     >
                       {document.image_base64 ? (
-                        <Tooltip title='Click to view in full size'>
-                          <Box
-                            sx={{
-                              cursor: "zoom-in",
-                              position: "relative",
-                              maxWidth: "100%",
-                              overflow: "hidden",
-                              textAlign: "center",
-                              transition: "transform 0.3s ease",
-                              "&:hover": {
-                                transform: "scale(1.02)",
-                              },
-                            }}
-                            onClick={() =>
-                              handleOpenZoom(
-                                `data:image/jpeg;base64,${document.image_base64}`
-                              )
-                            }
-                          >
+                        document.file_type === "pdf" ? (
+                          // PDF Viewer
+                          <PDFViewer pdfData={document.image_base64} />
+                        ) : (
+                          // Image Viewer (existing code)
+                          <Tooltip title='Click to view in full size'>
                             <Box
-                              component='img'
-                              src={`data:image/jpeg;base64,${document.image_base64}`}
-                              alt={document.filename}
                               sx={{
+                                cursor: "zoom-in",
+                                position: "relative",
                                 maxWidth: "100%",
-                                maxHeight: "70vh",
-                                borderRadius: 1,
-                                boxShadow: theme.shadows[4],
+                                overflow: "hidden",
+                                textAlign: "center",
+                                transition: "transform 0.3s ease",
+                                "&:hover": {
+                                  transform: "scale(1.02)",
+                                },
                               }}
-                              onError={(e) => {
-                                setImageError(true);
-                                e.target.style.display = "none";
-                              }}
-                            />
-                            {/* Rest of the Box content remains the same */}
-                          </Box>
-                        </Tooltip>
+                              onClick={() =>
+                                handleOpenZoom(
+                                  `data:image/jpeg;base64,${document.image_base64}`
+                                )
+                              }
+                            >
+                              <Box
+                                component='img'
+                                src={`data:image/jpeg;base64,${document.image_base64}`}
+                                alt={document.filename}
+                                sx={{
+                                  maxWidth: "100%",
+                                  maxHeight: "70vh",
+                                  borderRadius: 1,
+                                  boxShadow: theme.shadows[4],
+                                }}
+                                onError={(e) => {
+                                  setImageError(true);
+                                  e.target.style.display = "none";
+                                }}
+                              />
+                            </Box>
+                          </Tooltip>
+                        )
                       ) : (
                         <Typography
                           variant='body1'
@@ -900,8 +907,8 @@ const DocumentView = () => {
                           sx={{ mt: 3 }}
                         >
                           {imageError
-                            ? "Error loading document image."
-                            : "No document image available."}
+                            ? "Error loading document."
+                            : "No document available."}
                         </Typography>
                       )}
                     </Box>
@@ -1045,6 +1052,94 @@ const DocumentView = () => {
                   cursor: "default",
                 }}
               />
+            </Box>
+          </Fade>
+        </Modal>
+      )}
+      {/* PDF zoom modal */}
+      {document && document.file_type === "pdf" && (
+        <Modal
+          open={zoomDialogOpen}
+          onClose={handleCloseZoom}
+          closeAfterTransition
+          slots={{
+            backdrop: Backdrop,
+          }}
+          slotProps={{
+            backdrop: {
+              timeout: 500,
+            },
+          }}
+        >
+          <Fade in={zoomDialogOpen}>
+            <Box
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "95%",
+                height: "95%",
+                bgcolor: "background.paper",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                outline: "none",
+                borderRadius: 2,
+                p: 2,
+                boxShadow: 24,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  bgcolor: alpha(theme.palette.background.paper, 0.2),
+                  display: "flex",
+                  p: 0.5,
+                  borderRadius: 1,
+                  backdropFilter: "blur(5px)",
+                }}
+              >
+                <Tooltip title='Close'>
+                  <IconButton
+                    onClick={handleCloseZoom}
+                    size='small'
+                    color='inherit'
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+
+              {/* Document name */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 16,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  bgcolor: alpha(theme.palette.background.paper, 0.7),
+                  backdropFilter: "blur(5px)",
+                  borderRadius: 2,
+                  px: 2,
+                  py: 1,
+                }}
+              >
+                <Typography variant='body2' fontWeight='medium'>
+                  {document.filename}
+                </Typography>
+              </Box>
+
+              {/* PDF viewer */}
+              <Box
+                sx={{ width: "100%", height: "100%", overflow: "auto", mt: 4 }}
+              >
+                <PDFViewer pdfData={document.image_base64} />
+              </Box>
             </Box>
           </Fade>
         </Modal>
