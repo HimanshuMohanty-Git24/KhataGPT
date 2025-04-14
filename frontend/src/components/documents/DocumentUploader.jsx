@@ -94,30 +94,46 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
 
   const uploadFiles = async () => {
     if (files.length === 0) return;
-
+  
     setUploading(true);
     setUploadProgress(0);
     setError(null);
     setSuccess(false);
-
+  
     // Using axios for upload with progress tracking
     cancelTokenRef.current = axios.CancelToken.source();
-
+  
     try {
       const formData = new FormData();
       files.forEach((file) => {
-        formData.append("file", file); // Changed from 'files' to 'file' to match backend
+        formData.append("files", file); // Changed to "files" to match backend parameter
       });
-
-      // Replace direct axios call with documentService
-      await documentService.uploadDocuments(formData, (percentCompleted) => {
-        setUploadProgress(percentCompleted);
-      });
-
+  
+      // Add any other form fields if needed
+      formData.append('doc_type', 'unknown');
+  
+      // Direct axios call to ensure correct endpoint
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/documents/upload`, // Make sure this matches your API URL
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          cancelToken: cancelTokenRef.current.token,
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percentCompleted);
+          },
+        }
+      );
+  
       setSuccess(true);
       if (refreshDocuments) refreshDocuments();
       if (onUploadSuccess) onUploadSuccess();
-
+  
       // Clear files after successful upload with slight delay to show completion
       setTimeout(() => {
         setFiles([]);
@@ -287,6 +303,15 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
             <Typography variant='caption' display='block' color='textSecondary'>
               Supports JPG, PNG, GIF, WEBP, HEIC, TIFF, PDF (Max: 15MB)
             </Typography>
+            {/* Add this new caption */}
+            <Typography
+              variant='caption'
+              display='block'
+              color='textSecondary'
+              sx={{ mt: 1 }}
+            >
+              Multiple images will be automatically combined into a single PDF
+            </Typography>
           </Box>
         </Box>
       ) : (
@@ -371,6 +396,15 @@ const DocumentUploader = ({ onUploadSuccess, refreshDocuments }) => {
           <Typography variant='subtitle2' gutterBottom>
             Selected Files ({files.length})
           </Typography>
+
+          {/* Add this new alert for multiple image files */}
+          {files.length > 1 &&
+            files.every((file) => file.type.startsWith("image/")) && (
+              <Alert severity='info' sx={{ mb: 2 }}>
+                Multiple images will be automatically combined into a single PDF
+                document.
+              </Alert>
+            )}
 
           <Box
             sx={{
