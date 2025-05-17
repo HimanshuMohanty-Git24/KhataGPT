@@ -1,7 +1,7 @@
 <div align="center">
 
 # 📄 KhataGPT
-
+Currently Api POOR ![alt text](image.png)
 <img src="https://github.com/user-attachments/assets/6aa214b8-a363-4ea2-8410-562ecab2a251" width="200" height="200" />
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
